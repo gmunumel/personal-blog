@@ -1,0 +1,175 @@
+---
+title: Global Object Pattern in Python
+tags:
+  - python
+  - design-pattern
+  - global-object
+synopsis: >
+  The Global Object Pattern in Python allows you to define global variables that can be accessed
+  from anywhere in the application, creating singletons or constants shared across different modules.
+date: 2024-05-30
+---
+
+# Global Object Pattern in Python
+
+Like many other scripting languages, Python provides a way to write implementations that
+can be run multiple times. A _module_ is a file containing Python code that can be imported
+into other Python scripts. Within a module you can define functions, classes, and variables
+that can be accessed from other scripts. Variables that are created outside any object like
+functions or classes will have a global scope within the module, and they can be used to
+store state or configuration that should be shared across different parts of the application.
+
+There are many constants defined in the Python standard library that are
+accessible globally. These constants are defined in various modules and can be used
+to provide meaningful names for values that are used throughout the codebase. Most of the time,
+developers are not aware of these constants, but they can be very useful to improve code readability
+and reusability.
+
+```python
+import calendar
+import logging
+import configparser
+import email.utils
+
+January = 1                   # calendar.py
+WARNING = 30                  # logging.py
+MAX_INTERPOLATION_DEPTH = 10  # configparser.py
+TICK = "'"                    # email.utils.py
+```
+
+Notice that the constants variables defined above are _constant_ in terms of their memory
+store; their names could be changed. In general, assigning a value to a variable is just
+other way to label it in memory, and you can change the label at any time, but the memory
+allocation maintains intact.
+
+```python
+import calendar
+calendar.January = 42
+print(calendar.January)
+```
+
+Or even be deleted.
+
+```python
+import calendar
+del calendar.January
+print(calendar.January)
+```
+
+Usually when you see a value like `42` or a string like `Meaningful String` repeating all over your code,
+would be a good idea to define it as a constant in a module, so you centralize its definition
+and make it easier to change in the future.
+
+## Import-time
+
+When Python runs a script or module, it imports all the modules that are needed to execute the code.
+This process is called **import-time**. During import-time, Python executes the code in the module and
+creates a global object that contains all the variables, functions, and classes defined in the module.
+If your code uses numbers between `-5` and `256`, Python will use a global object to store these values
+to avoid creating new objects for each use. This is an optimization technique that helps to reduce
+memory usage. This is known as [object interning](https://www.geeksforgeeks.org/object-interning-in-python/).
+
+```python
+a = 100
+b = 100
+print(id(a))
+print(id(b))
+print(a is b)
+```
+
+In contrast, you can see what happens with larger numbers:
+
+```python
+a = 1000
+b = 1000
+print(id(a))
+print(id(b))
+print(a is b)
+```
+
+The behavior of the global object is not limited to numbers, it also applies to strings and
+other immutable objects. You could define a constant in a module that store a complex calculation
+and avoid recalculating it every time it is needed. This is a common practice to improve
+performance and reduce code duplication.
+
+```python
+import math
+COMPLEX_CONSTANT = math.sqrt(math.factorial(6) + math.pow(3, 4))
+print(id(COMPLEX_CONSTANT))
+print(COMPLEX_CONSTANT)
+```
+
+## Dunder Constants
+
+If you are a novice Python developer, or even an experienced one, most probably you have
+used the `__name__` and `'__main__'` dunder constants. These are special variables that are
+defined by Python at runtime and can be used to determine if a module is being run as the main program or
+if it is being imported by another module. Dunder constants are defined at a module's global
+level and their names start and end with double underscores (`__`). The three most common are:
+
+- `__name__`: A special variable in Python that holds the name of the current module.
+  If the file is being run directly, `__name__` is set to `'__main__'`.
+  If the file is imported as a module, `__name__` is set to the module’s name.
+
+- `'__main__'`: The string value assigned to `__name__` when a Python file is executed directly.
+  This allows code to distinguish between running as a script or being imported.
+
+- `__file__`: A special variable that contains the path to the current file. Useful for
+  determining the file’s location on disk.
+
+If you are curious you can list dunder constants in a module using the `dir()` function:
+
+```python
+print([name for name in dir(__builtins__) if name.startswith('__') and name.endswith('__')])
+```
+
+## Global Object Pattern
+
+The **Global Object Pattern** is visible when a module instantiates an object at import time
+and assigns it a name in the module's global scope. But the object is not a simple string, number,
+or data structure. Instead, the object exposes methods and properties that can be used to interact
+with it.
+
+There are two categories:
+
+- **Immutable Global Object**: This is a global object that is created at import time and
+  does not change during the lifetime of the program. It is usually a constant value or a
+  configuration object that is used throughout the application.
+
+- **Mutable Global Object**: This is a global object that can change during the lifetime of
+  the program. It is usually a singleton object that is used to store state or configuration
+  that can be modified by different parts of the application.
+
+An example of a **Immutable Global Object** is a compiled regular expression.
+
+```python
+import re
+HAS_UTF8 = re.compile(r'[\x00-\x7F]') # json/encoder.py
+```
+
+This regular expression is compiled at import time and can be used to check if a string
+contains only ASCII characters. However, incurs a performance penalty if the
+regular expression is not used frequently, as it is compiled every time the module is imported,
+even if it is not used.
+
+An example of a **Mutable Global Object** is the `environ` dictionary inside `os` package.
+
+```python
+import os
+print(os.environ['PATH'])
+os.environ['PATH'] = '/usr/local/bin'
+print(os.environ['PATH'])
+```
+
+## Conclusion
+
+The Global Object Pattern is a powerful way to manage state and configuration in Python applications.
+It allows you to define global variables that can be accessed from anywhere in the application,
+and it can be used to create singletons or constants that are shared across different modules.
+
+## References
+
+- [Python Global Variables](https://www.w3schools.com/python/gloss_python_global_variables.asp)
+- [Python Data Model](https://docs.python.org/3/reference/datamodel.html)
+- [Python Design Patterns](https://python-patterns.guide/)
+- [Fluent Python, 2nd Edition](https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/)

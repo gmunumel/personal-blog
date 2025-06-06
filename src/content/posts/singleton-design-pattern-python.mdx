@@ -1,0 +1,141 @@
+---
+title: Singleton Design Pattern in Python
+tags:
+  - python
+  - design-pattern
+  - singleton
+synopsis: >
+  The Singleton Design Pattern in Python ensures that only one instance of a class exists throughout the application.
+date: 2024-07-23
+---
+
+# Singleton Design Pattern in Python
+
+Usually we want to create multiple instances of a class, but sometimes we need to ensure
+that only one instance of a class exists throughout the application. This is where the Singleton
+Design Pattern comes into play. Common examples are database connections, logging, cache
+management or configuration settings.
+
+## Singleton Design Pattern
+
+Restricts the instantiation of a class to a single instance.
+
+### First implementation
+
+In Python, the **Singleton design pattern** can be implemented using a class variable to
+keep track of the instance. When a new instance is requested, it checks if an instance already exists.
+If it does, it returns the existing instance; otherwise, it creates a new one.
+
+```python
+class Singleton:
+  _instance = None
+
+  def __new__(cls, *args, **kwargs):
+    if not cls._instance:
+      cls._instance = super(Singleton, cls).__new__(cls)
+    return cls._instance
+
+
+singleton1 = Singleton()
+singleton2 = Singleton()
+print(singleton1 is singleton2)
+```
+
+The `__new__` (dunder `new`) method is overridden to control instance creation. The class
+variable `_instance` is used to store the single instance of the class. When a new
+instance is requested, it checks if `_instance` is `None`. If it is, it creates a new
+instance using `super()`. If an instance already exists,
+it simply returns that instance.
+
+While this implementation works, it has some limitations. For example, it does not handle
+thread safety, which can lead to issues in multi-threaded applications. Additionally, it does
+not allow for lazy initialization, meaning the instance is created as soon as
+the class is defined, even if it is never used.
+
+### Second implementation
+
+A more robust implementation can be achieved using a decorator to ensure thread
+safety and lazy initialization.
+
+```python
+import threading
+
+class SingletonMeta(type):
+  _instances = {}
+  _lock = threading.Lock()
+
+  def __call__(cls, *args, **kwargs):
+    if cls not in cls._instances:
+      with cls._lock:
+        if cls not in cls._instances:
+          cls._instances[cls] = super().__call__(*args, **kwargs)
+    return cls._instances[cls]
+
+class Singleton(metaclass=SingletonMeta):
+  def __init__(self):
+    print("Initializing singleton instance")
+
+singleton1 = Singleton()
+singleton2 = Singleton()
+print(singleton1 is singleton2)
+```
+
+In this implementation, we define a metaclass `SingletonMeta` that overrides the `__call__` method.
+This method creates instances of the class. It uses a class variable `_instances`
+to store instances of the classes that use this metaclass. The `_lock` variable is a threading lock
+that ensures that only one thread can create an instance at a time.
+
+### A Pythonic way
+
+While the two examples above demonstrate the **Singleton design pattern**, Python provides a more
+Pythonic way to implement it using a module. In Python, modules are singletons by nature, meaning
+that when a module is imported, it is only loaded once, and subsequent imports return the same instance.
+This takes advantage of Python's module system and global definition to create a singleton-like behavior.
+See question ["How do I share global variables across modules?"](https://docs.python.org/3/faq/programming.html#how-do-i-share-global-variables-across-modules).
+
+```python
+# singleton.py
+class Singleton:
+    def __init__(self):
+        self.value = 42
+
+    def print_value(self):
+        print(f"The value is: {self.value}")
+
+
+single_instance = Singleton()
+
+
+# main.py
+from singleton import single_instance
+
+single_instance.print_value()
+
+single_instance.value = 100
+
+from singleton import single_instance as another_instance
+
+assert another_instance.print_value() == single_instance.print_value()
+print(f"Are instances the same?: {another_instance is single_instance}")
+```
+
+In this example, the `Singleton` class is defined in a separate module (`singleton.py`),
+and an instance of it is created as `single_instance`. When this module is imported in
+`main.py`, the same instance is used, ensuring that there is only one instance of
+the `Singleton` class throughout the application.
+
+## Conclusion
+
+The Singleton Design Pattern is a useful design pattern in Python when you need to ensure that
+only one instance of a class exists in your application. While the first implementation
+is simple and straightforward; it has limitations in terms of thread safety and lazy initialization.
+The second implementation using a metaclass provides a more robust solution, ensuring thread safety
+and lazy initialization. However, Python's module system provides a more Pythonic way to achieve
+singleton behavior, leveraging the fact that modules are, by nature, singletons. This approach is
+cleaner and more idiomatic, making it the preferred way to implement singletons in Python.
+
+## References
+
+- [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
+- [Python Design Patterns](https://python-patterns.guide/)
+- [Head First Design Patterns, 2nd Edition](https://www.oreilly.com/library/view/head-first-design/9781492077992/)

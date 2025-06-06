@@ -1,0 +1,283 @@
+---
+title: Strategy Design Pattern in Python
+tags:
+  - python
+  - design-pattern
+  - strategy
+synopsis: >
+  The Strategy Design Pattern in Python allows you to encapsulate algorithms and make them interchangeable,
+  promoting maintainability and scalability in your codebase.
+date: 2025-06-01
+---
+
+# Strategy Design Pattern in Python
+
+The **Strategy design pattern** tries to solve a situation when you have multiple possible algorithms and the
+client is tightly coupled. Most probably your implementation generates multiple `if-else` statement to decide which
+algorithm to use at runtime. This code is difficult to maintain, scale and is not aligned with [open-closed principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
+(open for extension and close for modification).
+
+## Strategy Design Pattern
+
+Encapsulate each algorithm, make them interchangeable. Algorithms vary independently from clients.
+
+The solution presented takes advantage of the fact that Python's functions are [first class objects](https://www.geeksforgeeks.org/first-class-functions-python/).
+
+### Case Study
+
+Suppose you have an incredible story to tell and want to share it with your friends, so you decide to post it on your social media. You can make a post to `Instagram`, `Facebook` or `Twitter`.
+
+The following code represents a class `SocialMedia` that is responsible for posting comments
+to different social media platforms like `Instagram`, `Facebook`, and `Twitter`. The problem with
+this code is that it uses a lot of `if-else` statements to determine which social media platform to use,
+breaking the principle of [one reason to change (S of _SOLID_)](https://en.wikipedia.org/wiki/Single-responsibility_principle).
+
+```python
+from dataclasses import dataclass
+
+
+@dataclass
+class SocialMedia:
+  username: str
+  social_media_type: str
+
+  def post(self, content: str) -> None:
+    if self.social_media_type == "Instagram":
+      self.instagram_story(content)
+    elif self.social_media_type == "Facebook":
+      self.facebook_story(content)
+    elif self.social_media_type == "Twitter":
+      self.twitter_story(content)
+    else:
+      raise ValueError("Unsupported social media type")
+
+  def set_social_media_type(self, social_media_type: str) -> None:
+    self.social_media_type = social_media_type
+
+  def instagram_story(self, content: str) -> None:
+    print(f"Posting to Instagram: {content}, by {self.username}")
+
+  def facebook_story(self, content: str) -> None:
+    print(f"Posting to Facebook: {content}, by {self.username}")
+
+  def twitter_story(self, content: str) -> None:
+    print(f"Posting to Twitter: {content}, by {self.username}")
+
+
+social_media = SocialMedia("John", "Instagram")
+social_media.post("Hello, Instagram!")
+social_media.set_social_media_type("Facebook")
+social_media.post("Hello, Facebook!")
+social_media.set_social_media_type("Twitter")
+social_media.post("Hello, Twitter!")
+```
+
+### Code to an Interface
+
+To improve the design, we can create an interface `Story` that defines a method `post`.
+Each social media platform will implement this interface, allowing us to encapsulate the posting logic for each platform. The UML class diagram below illustrate that.
+
+- **Context:** provide a computation interchangeable component, in this case `SocialMedia`.
+
+- **Strategy:** the common interface that implement the different algorithms: `Story`.
+
+- **Concrete strategy:** one of the concrete subclasses of Strategy: `InstagramStory`, `FacebookStory` and `TwitterStory`.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/strategy-design-pattern-python/class_diagram.png"
+    alt="UML class diagram for Strategy Design Pattern in Python"
+    width="400"
+    className="mb-2 shadow rounded-lg border border-gray-200 dark:border-gray-700 text-center mx-auto"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    UML class diagram for Strategy Design Pattern in Python
+  </figcaption>
+</figure>
+
+```python
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+
+
+class Story(ABC):
+  @abstractmethod
+  def post(self, content: str, username: str) -> None:
+    pass
+
+
+class InstagramStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Instagram: {content}, by {username}")
+
+
+class FacebookStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Facebook: {content}, by {username}")
+
+
+class TwitterStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Twitter: {content}, by {username}")
+
+
+@dataclass
+class SocialMedia:
+  username: str
+  social_media_type: Story
+
+  def post(self, content: str) -> None:
+    self.social_media_type.post(content, self.username)
+
+  def set_social_media_type(self, social_media_type: Story) -> None:
+    self.social_media_type = social_media_type
+
+
+social_media = SocialMedia("John", InstagramStory())
+social_media.post("Hello, Instagram!")
+social_media.set_social_media_type(FacebookStory())
+social_media.post("Hello, Facebook!")
+social_media.set_social_media_type(TwitterStory())
+social_media.post("Hello, Twitter!")
+```
+
+This approach allows us to easily add new social media platforms without modifying the existing code,
+adhering to the open-closed principle. Each platform's posting logic is encapsulated in its own class,
+making the code more maintainable and scalable. Interface classes in Python are defined using the `abc`
+module, which provides the `ABC` class and the `abstractmethod` decorator to create abstract base classes.
+However, in Python we don't have a strict interface like in other languages, so we can use duck typing.
+
+### Move Algorithms to a Separate Module
+
+To further improve the design, we can move the concrete strategy classes to a separate module.
+This will help keep our code organized and maintainable, especially as we add more social media platforms in the future.
+
+```python
+# interface_social_media.py
+from abc import ABC, abstractmethod
+
+
+class Story(ABC):
+  @abstractmethod
+  def post(self, content: str, username: str) -> None:
+    pass
+
+
+class InstagramStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Instagram: {content}, by {username}")
+
+
+class FacebookStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Facebook: {content}, by {username}")
+
+
+class TwitterStory(Story):
+  def post(self, content: str, username: str) -> None:
+    print(f"Posting to Twitter: {content}, by {username}")
+
+
+social_media_list = [InstagramStory(), FacebookStory(), TwitterStory()]
+
+
+# social_media.py
+from interface_social_media import social_media_list
+
+
+def print_all_stories(username: str) -> None:
+  for social_media_item in social_media_list:
+    social_media_item.post("Hello, World!", username)
+
+
+if __name__ == "__main__":
+  print_all_stories("John")
+```
+
+This modular approach allows us to easily add new social media platforms by simply
+creating a new class that implements the `Story` interface and adding it to
+the `social_media_list`.
+
+### Decorator-Enhanced Strategy pattern
+
+We could also enhance the Strategy design pattern by using a decorator to register story functions.
+Store in `stories` a list of story functions that can be used to post content to different social media platforms.
+The order of definition for `Story`, `stories`, and the function `story` is important to ensure that each
+algorithm is registered correctly and can be called later, see the snippet below. This process is done by Python in import time
+(before the application run), later when the application is executed, the `story` decorator will run
+each function annotated with the decorator.
+
+```python
+from dataclasses import dataclass
+from typing import Optional, Callable
+
+Story = Callable[["SocialMedia"], str]
+
+stories: list[Story] = []
+
+def story(story_func: Story) -> Story:
+  stories.append(story_func)
+  return story_func
+
+
+@story
+def instagram_story(social_media: "SocialMedia") -> str:
+  content = "Hello, Instagram!"
+  post = f"Posting to Instagram: {content}, by {social_media.username}"
+  return post
+
+
+@story
+def facebook_story(social_media: "SocialMedia") -> str:
+  content = "Hello, Facebook!"
+  post = f"Posting to Facebook: {content}, by {social_media.username}"
+  return post
+
+
+@story
+def twitter_story(social_media: "SocialMedia") -> str:
+  content = "Hello, Twitter!"
+  post = f"Posting to Twitter: {content}, by {social_media.username}"
+  return post
+
+
+@dataclass(frozen=True)
+class SocialMedia:
+  username: str
+  story: Optional[Callable[["SocialMedia"], str]] = None
+
+  def timeline(self) -> str:
+    if self.story is None:
+      raise ValueError("No story function set for this social media.")
+    return self.story(self)
+
+
+def print_all_stories(social_media: SocialMedia) -> None:
+  for story_item in stories:
+    print(story_item(social_media))
+
+
+if __name__ == "__main__":
+  user = SocialMedia("John", story=instagram_story)
+  print(user.timeline())
+  print_all_stories(user)
+```
+
+This approach allows us to define multiple story functions and register them using the `@story` decorator.
+The `SocialMedia` class can then use these registered story functions to post content to different platforms.
+This design pattern is flexible and allows for easy extension by simply adding new story functions without modifying the existing code.
+
+## Conclusion
+
+The Strategy design pattern is a powerful way to encapsulate algorithms and make them interchangeable.
+By defining a common interface and implementing concrete strategies, we can easily switch between different
+algorithms without modifying the client code. This approach adheres to the open-closed principle and
+promotes maintainability and scalability in our codebase.
+
+## References
+
+- [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
+- [Python Design Patterns](https://python-patterns.guide/)
+- [Fluent Python, 2nd Edition](https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/)
+- [Design Patterns in Python](http://www.aleax.it/gdd_pydp.pdf)
+- [Head First Design Patterns, 2nd Edition](https://www.oreilly.com/library/view/head-first-design/9781492077992/)

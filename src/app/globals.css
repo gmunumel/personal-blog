@@ -1,21 +1,205 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+/* @import "prism-themes/themes/prism-one-dark.css"; */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* @layer base {
+  :root {
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+    }
+  }
+} */
+
+/* Color variables for light and dark mode */
+/* :root,
+html.light {
+  --background: #f9fafb;
+  --foreground: #18181b;
+  --accent: #2563eb;
+  --accent-foreground: #fff;
+  --border: #e5e7eb;
+  --code-bg: #f3f4f6;
+  --code-text: #be185d;
+  --link: #2563eb;
+  --link-hover: #1d4ed8;
+  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html.dark {
+  --background: #18181b;
+  --foreground: #f4f4f5;
+  --accent: #60a5fa;
+  --accent-foreground: #18181b;
+  --border: #27272a;
+  --code-bg: #23272f;
+  --code-text: #f472b6;
+  --link: #60a5fa;
+  --link-hover: #3b82f6;
+  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.24);
+  color-scheme: dark;
+} */
+
+:root,
+html.light {
+  --background: #f9fafb;
+  --foreground: #18181b;
+  --accent: #2563eb;
+  --accent-foreground: #fff;
+  --border: #e5e7eb;
+  --code-bg: #f3f4f6;
+  --code-text: #be185d;
+  --link: #2563eb;
+  --link-hover: #1d4ed8;
+  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+  color-scheme: light;
+}
+
+html.dark {
+  --background: #18181b;
+  --foreground: #f4f4f5;
+  --accent: #60a5fa;
+  --accent-foreground: #18181b;
+  --border: #27272a;
+  --code-bg: #23272f;
+  --code-text: #f472b6;
+  --link: #60a5fa;
+  --link-hover: #3b82f6;
+  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.24);
+  color-scheme: dark;
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
-  color: var(--foreground);
+  min-height: 100vh;
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--foreground);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Typography for markdown content */
+.prose {
+  color: var(--foreground);
+  /* max-width: 65ch; */ /* Uncomment to limit width for posts */
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose h1 {
+  font-size: 2.5rem;
+}
+.prose h2 {
+  font-size: 2rem;
+}
+.prose h3 {
+  font-size: 1.5rem;
+}
+.prose h4 {
+  font-size: 1.25rem;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--foreground);
+}
+.prose p,
+.prose ul,
+.prose ol {
+  margin-bottom: 1.25em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5em;
+}
+
+.prose a {
+  color: var(--link);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+.prose a:hover {
+  color: var(--link-hover);
+}
+
+.prose code {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.prose pre {
+  /* background: var(--code-bg); */
+  /* color: var(--code-text); */
+  /* color: var(--color-green-300); */
+  color: var(--color-blue-400);
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  /* margin-bottom: 1.5em; */
+}
+
+.prose img {
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  /* margin: 2em 0; */
+  max-width: 100%;
+  height: auto;
+}
+
+.prose blockquote {
+  border-left: 4px solid var(--accent);
+  padding-left: 1em;
+  color: var(--accent);
+  margin: 1.5em 0;
+  font-style: italic;
+  background: rgba(37, 99, 235, 0.05);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+/* Hide Next.js route indicator in dev */
+.nextjs-portal {
+  display: none !important;
+}
+
+/* .dark strong {
+  @apply text-white;
+} */
+
+.bg-gray-800-hover:hover {
+  background-color: var(--color-gray-800);
+}
+
+article.prose > :nth-child(-n + 4) {
+  display: none;
+}
+
+.lolo_and_me {
+  width: 300px;
+  height: 400px;
 }
