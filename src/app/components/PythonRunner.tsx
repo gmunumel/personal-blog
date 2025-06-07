@@ -12,10 +12,7 @@ const PythonRunner = ({ code }: { code: string }) => {
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
-    // Dynamically import the worker
-    const worker = new Worker(new URL("./pyodide.worker.js", import.meta.url), {
-      type: "module",
-    });
+    const worker = new Worker(`${window.location.origin}/pyodide.worker.js`);
     workerRef.current = worker;
 
     worker.onmessage = (event) => {
@@ -43,7 +40,6 @@ const PythonRunner = ({ code }: { code: string }) => {
     }
   };
 
-  // Run code automatically on first load
   useEffect(() => {
     if (!loading) runCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps

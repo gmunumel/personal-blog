@@ -5,6 +5,8 @@ import remarkSlug from "remark-slug";
 const nextConfig = {
   // Add any other Next.js config options here
   pageExtensions: ["ts", "tsx", "js", "jsx", "mdx"],
+  output: "export",
+  trailingSlash: true, // important for S3 routing
   // experimental: {
   //   mdxRs: false,
   // },
