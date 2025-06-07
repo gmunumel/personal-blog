@@ -1,10 +1,5 @@
 import React from "react";
-// import dynamic from "next/dynamic";
 import PythonRunner from "@/app/components/PythonRunner";
-
-// const PythonRunner = dynamic(() => import("@/app/components/PythonRunner"), {
-//   ssr: false,
-// });
 
 export const mdxComponents = {
   pre: (props: React.ComponentPropsWithoutRef<"pre">) => {

@@ -1,46 +1,4 @@
 @import "tailwindcss";
-/* @import "prism-themes/themes/prism-one-dark.css"; */
-
-/* @layer base {
-  :root {
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-    }
-  }
-} */
-
-/* Color variables for light and dark mode */
-/* :root,
-html.light {
-  --background: #f9fafb;
-  --foreground: #18181b;
-  --accent: #2563eb;
-  --accent-foreground: #fff;
-  --border: #e5e7eb;
-  --code-bg: #f3f4f6;
-  --code-text: #be185d;
-  --link: #2563eb;
-  --link-hover: #1d4ed8;
-  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
-  color-scheme: light;
-}
-
-html.dark {
-  --background: #18181b;
-  --foreground: #f4f4f5;
-  --accent: #60a5fa;
-  --accent-foreground: #18181b;
-  --border: #27272a;
-  --code-bg: #23272f;
-  --code-text: #f472b6;
-  --link: #60a5fa;
-  --link-hover: #3b82f6;
-  --shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.24);
-  color-scheme: dark;
-} */
 
 :root,
 html.light {

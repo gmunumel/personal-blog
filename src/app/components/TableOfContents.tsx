@@ -15,7 +15,7 @@ const TableOfContents = () => {
         nodes.map((node) => ({
           id: node.id,
           text: node.textContent || "",
-          level: Number(node.tagName.replace("H", "")), // 1-6
+          level: Number(node.tagName.replace("H", "")), // Convert H1-H6 to 1-6
         }))
       );
     };
