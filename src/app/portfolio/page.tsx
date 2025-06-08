@@ -16,7 +16,7 @@ const PortfolioPage = () => {
             transcription and React for the frontend.
           </p>
           <a
-            href="https://stackedge.dev/portfolio/phonic-ai/"
+            href="https://phonic-ai.stackedge.dev/portfolio/phonic-ai"
             className="text-blue-600 dark:text-blue-400 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
