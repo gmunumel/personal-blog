@@ -13,7 +13,7 @@ const LoloPage = () => {
             alt="Photo of Lolo the chow chow"
             width={512}
             height={512}
-            className="lolo_and_me mb-4 shadow-lg rounded-xl border-4 border-blue-200 dark:border-blue-900 object-cover"
+            className="w-full h-auto rounded-xl shadow-lg border-4 border-blue-200 dark:border-blue-900 object-cover mb-4"
             priority
           />
           <h1 className="text-4xl font-extrabold mb-1 text-blue-800 dark:text-blue-200 text-center">

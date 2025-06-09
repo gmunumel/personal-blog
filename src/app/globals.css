@@ -158,11 +158,6 @@ article.prose > :nth-child(-n + 4) {
   display: none;
 }
 
-.lolo_and_me {
-  width: 300px;
-  height: 400px;
-}
-
 .collapsed-bar {
   background-color: var(--color-gray-200);
 }
@@ -177,4 +172,11 @@ html.dark .collapsed-bar {
 
 html.dark .dark-mode {
   background-color: var(--color-gray-200);
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
