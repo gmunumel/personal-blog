@@ -2,6 +2,7 @@ const isExport = process.env.EXPORT === "true";
 
 import withMDX from "@next/mdx";
 import remarkSlug from "remark-slug";
+import remarkCodeMeta from "./remark-code-meta.js";
 
 const nextConfig = {
   // Add any other Next.js config options here
@@ -19,6 +20,6 @@ const nextConfig = {
 export default withMDX({
   extension: /\.mdx?$/,
   options: {
-    remarkPlugins: [remarkSlug],
+    remarkPlugins: [remarkSlug, remarkCodeMeta],
   },
 })(nextConfig);

@@ -93,7 +93,8 @@ that when a module is imported, it is only loaded once, and subsequent imports r
 This takes advantage of Python's module system and global definition to create a singleton-like behavior.
 See question ["How do I share global variables across modules?"](https://docs.python.org/3/faq/programming.html#how-do-i-share-global-variables-across-modules).
 
-```python
+```python 
+# no-run
 # singleton.py
 class Singleton:
     def __init__(self):

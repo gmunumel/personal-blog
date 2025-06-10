@@ -16,8 +16,12 @@ export const mdxComponents = {
       lang = (props.children.props as { className?: string }).className;
     }
 
+    const noRun = code?.trimStart().startsWith("# no-run") ?? false;
+    const codeToRun =
+      noRun && code ? code.split("\n").slice(1).join("\n") : code;
+
     if (lang && lang.includes("language-python")) {
-      return <PythonRunner code={code ?? ""} />;
+      return <PythonRunner code={codeToRun ?? ""} noRun={noRun} />;
     }
     return <pre {...props} />;
   },

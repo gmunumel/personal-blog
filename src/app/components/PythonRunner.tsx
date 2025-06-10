@@ -5,13 +5,20 @@ import Prism from "prismjs";
 import "prismjs/components/prism-python";
 import "prismjs/themes/prism-tomorrow.css";
 
-const PythonRunner = ({ code }: { code: string }) => {
+const PythonRunner = ({
+  code,
+  noRun = false,
+}: {
+  code: string;
+  noRun?: boolean;
+}) => {
   const [output, setOutput] = useState<string>("Loading Python...");
   const [currentCode, setCurrentCode] = useState(code);
   const [loading, setLoading] = useState(true);
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
+    if (noRun) return; // Don't load worker if noRun
     const worker = new Worker(`${window.location.origin}/pyodide.worker.js`);
     workerRef.current = worker;
 
@@ -31,7 +38,7 @@ const PythonRunner = ({ code }: { code: string }) => {
     return () => {
       worker.terminate();
     };
-  }, []);
+  }, [noRun]);
 
   const runCode = () => {
     if (workerRef.current) {
@@ -41,9 +48,9 @@ const PythonRunner = ({ code }: { code: string }) => {
   };
 
   useEffect(() => {
-    if (!loading) runCode();
+    if (!loading && !noRun) runCode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+  }, [loading, noRun]);
 
   return (
     <div className="my-4 p-4 rounded bg-gray-50 dark:bg-gray-900">
@@ -59,18 +66,22 @@ const PythonRunner = ({ code }: { code: string }) => {
         style={{
           outline: "none",
         }}
-        disabled={loading}
+        disabled={loading && !noRun}
       />
-      <button
-        className="px-3 py-1 rounded bg-blue-600 text-white disabled:bg-gray-400 cursor-pointer transition-colors"
-        onClick={runCode}
-        disabled={loading}
-      >
-        {loading ? "Loading Python..." : "Run Python"}
-      </button>
-      <pre className="mt-2 bg-gray-800 p-2 rounded whitespace-pre-wrap text-xs">
-        {output}
-      </pre>
+      {!noRun && (
+        <>
+          <button
+            className="px-3 py-1 rounded bg-blue-600 text-white disabled:bg-gray-400 cursor-pointer transition-colors"
+            onClick={runCode}
+            disabled={loading}
+          >
+            {loading ? "Loading Python..." : "Run Python"}
+          </button>
+          <pre className="mt-2 bg-gray-800 p-2 rounded whitespace-pre-wrap text-xs">
+            {output}
+          </pre>
+        </>
+      )}
     </div>
   );
 };
