@@ -31,7 +31,7 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="dark-mode ml-auto px-3 py-1 rounded border border-gray-300 dark:border-gray-600 
+      className="ml-auto px-3 py-1 rounded border border-gray-300 dark:border-gray-600 
                  text-gray-100 dark:text-gray-800 transition cursor-pointer"
       aria-label="Toggle dark mode"
     >
