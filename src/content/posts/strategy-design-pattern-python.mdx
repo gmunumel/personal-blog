@@ -78,9 +78,7 @@ To improve the design, we can create an interface `Story` that defines a method 
 Each social media platform will implement this interface, allowing us to encapsulate the posting logic for each platform. The UML class diagram below illustrate that.
 
 - **Context:** provide a computation interchangeable component, in this case `SocialMedia`.
-
 - **Strategy:** the common interface that implement the different algorithms: `Story`.
-
 - **Concrete strategy:** one of the concrete subclasses of Strategy: `InstagramStory`, `FacebookStory` and `TwitterStory`.
 
 <figure className="flex flex-col items-center w-full">
@@ -152,7 +150,7 @@ However, in Python we don't have a strict interface like in other languages, so 
 To further improve the design, we can move the concrete strategy classes to a separate module.
 This will help keep our code organized and maintainable, especially as we add more social media platforms in the future.
 
-```python 
+```python
 # no-run
 # interface_social_media.py
 from abc import ABC, abstractmethod

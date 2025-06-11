@@ -1,0 +1,216 @@
+---
+title: Private and Protected Attributes
+tags:
+  - python
+  - programming
+  - encapsulation
+synopsis: >
+  Understanding private and protected attributes in Python is important for maintaining 
+  encapsulation and controlling access to class internals.
+date: 2024-06-01
+---
+
+# Private and Protected Attributes in Python
+
+Python does not provide keywords for public, protected, or private attributes like some other
+programming languages. Instead, it relies on naming conventions to indicate the intended
+visibility of class attributes. This is because Python follows the principle:
+
+> We are all consenting adults here.
+
+Stated by Guido van Rossum, the creator of Python. This principle suggests that Python trusts
+developers to follow conventions rather than enforcing strict access controls.
+
+## Understanding Access Control in Python
+
+You may wonder: without any explicit visibility modifiers, how can we manage access to class internals?
+Python uses a simple naming convention to indicate the intended visibility of attributes:
+
+- **Public attributes** are defined normally and can be accessed from outside the class.
+- **Protected attributes** are prefixed with a single underscore (e.g., `_protected_attr`) and
+  are intended for internal use within the class and its subclasses.
+- **Private attributes** are prefixed with double underscores (e.g., `__private_attr`) and are intended
+  to be inaccessible from outside the class.
+
+With the following code, we can illustrate these concepts:
+
+```python
+class MyClass:
+  def __init__(self):
+    self.public_attr = "I am public"
+    self._protected_attr = "I am protected"
+    self.__private_attr = "I am private"
+
+  def get_private_attr(self):
+    return self.__private_attr
+
+  def set_private_attr(self, value):
+    self.__private_attr = value
+
+  def show_attributes(self):
+    print(f"Public: {self.public_attr}")
+    print(f"Protected: {self._protected_attr}")
+    print(f"Private: {self.get_private_attr()}")
+    print()
+
+obj = MyClass()
+obj.show_attributes()
+
+print(obj.public_attr)
+print(obj._protected_attr)
+try:
+  print(obj.__private_attr)
+except AttributeError as e:
+  print(e)
+
+print()
+obj.set_private_attr("New private value")
+obj.show_attributes()
+
+print(obj.__dict__)
+print(obj._MyClass__private_attr)
+```
+
+As shown above, public attributes are accessible directly, protected attributes are accessible but
+intended for internal use, and private attributes raise an `AttributeError` if accessed directly from
+outside the class.
+
+Last couple of lines in the code snippet show that private attributes can still be accessed
+using [name mangling](https://en.wikipedia.org/wiki/Name_mangling#Python), which is a feature of Python that changes the name of the private attribute
+to include the class name. This is done to prevent accidental access but does not provide true
+encapsulation. The `__dict__` attribute of the object shows all attributes, including private ones,
+and the private attribute can be accessed using its mangled name (`_MyClass__private_attr`).
+
+## Name Mangling
+
+Name mangling is a way to avoid naming conflicts in subclasses, but it should not be relied upon
+for security or strict encapsulation.
+
+Name mangling is applied to attributes that are prefixed with double underscores,
+which changes their name to include the class name. This means that if you try to access a
+private attribute directly, it will raise an `AttributeError`, but you can still access it
+using its mangled name.
+
+```python
+class Base:
+  def __init__(self):
+    self.__private_attr = "Base private"
+
+class Derived(Base):
+  def __init__(self):
+    super().__init__()
+    self.__private_attr = "Derived private"
+
+  def show_private_attr(self):
+    print(f"Base private attribute: {self._Base__private_attr}")
+    print(f"Derived private attribute: {self.__private_attr}")
+
+base = Base()
+derived = Derived()
+print(base.__dict__)
+print(derived.__dict__)
+print()
+derived.show_private_attr()
+
+try:
+  print(derived.__private_attr)
+except AttributeError as e:
+  print(e)
+```
+
+In this example, the `Base` class has a private attribute `__private_attr`, and the `Derived` class
+also has a private attribute with the same name. When we try to access `__private_attr` directly from an
+instance of `Derived`, it raises an `AttributeError`. However, we can access the base class's private
+attribute using its mangled name `_Base__private_attr`. This demonstrates that name mangling is a way to
+avoid naming conflicts in subclasses, but it does not provide true encapsulation. The private attribute
+in the derived class is still accessible within its own methods.
+
+Name mangling is not universally favored, and some developers prefer to use a single underscore
+to indicate protected attributes, which can be accessed from subclasses but are not intended for
+external use. This is a matter of preference, but it is important to be consistent in your codebase.
+
+Ian Bicking, a Python developer and the creator of _pip_ and _virtualenv_, defined a [Paste Style Guide](https://paste.readthedocs.io/en/latest/StyleGuide.html#paste-style-guide)
+discussing the use of private attributes in Python and the implications of name mangling. He argues:
+
+> Never, ever use two leading underscores. This is annoyingly private. If name clashes are a concern,
+> use explicit name mangling instead (e.g., `_MyThing_blahblah`). This is essentially the same thing
+> as double-underscore, only it’s transparent where double underscore obscures.
+
+## Getters and Setters
+
+In Python, instead of traditional getter and setter methods, it is more idiomatic to use properties
+to control access to attributes. Properties allow you to define methods that can be accessed like attributes,
+while still providing the ability to control access or validation.
+
+```python
+class MyClass:
+  def __init__(self):
+    self._protected_attr = "Protected"
+    self.__private_attr = "Private"
+
+  def get_protected_attr(self):  # This is not idiomatic in Python, use properties instead
+    return self._protected_attr
+
+  @property
+  def protected_attr(self):
+    return self._protected_attr
+
+  @protected_attr.setter
+  def protected_attr(self, value):
+    self._protected_attr = value
+
+  @property
+  def private_attr(self):
+    return self.__private_attr
+
+  @private_attr.setter
+  def private_attr(self, value):
+    self.__private_attr = value
+
+  def show_attributes(self):
+    print(f"Protected: {self.protected_attr}")
+    print(f"Private: {self.private_attr}")
+
+obj = MyClass()
+obj.show_attributes()
+obj.protected_attr = "New Protected Value"
+obj.private_attr = "New Private Value"
+obj.show_attributes()
+```
+
+In this example, we define properties for the protected and private attributes. The `@property` decorator
+allows us to access the attributes like regular attributes, while the setter methods allow us to modify
+the values. This approach provides a clean and Pythonic way to manage access to class attributes
+while still allowing for encapsulation and validation.
+
+Avoid declaring a getter method as `get_protected_attr` or `get_private_attr`, as this is not idiomatic
+in Python.
+
+## Best Practices
+
+When working with private and protected attributes in Python, consider the following best practices:
+
+- **Use Single Underscore for Protected Attributes**: use a single underscore prefix (e.g., `_protected_attr`) to indicate
+  that an attribute is intended for internal use within the class and its subclasses.
+- **Use Double Underscore for Name Mangling**: prefix with double underscores
+  (e.g., `__private_attr`) only when necessary to avoid name clashes in subclasses. **_But only if necessary_**.
+- **Avoid Overusing Private Attributes**: relying too heavily on private attributes can lead to tightly coupled
+  code. Consider whether an attribute truly needs to be private or if it can be made public or protected.
+- **Be Consistent**: whatever conventions you choose to follow, be consistent throughout your codebase
+  to maintain readability and understandability.
+- **Avoid Getter and Setter Methods**: Python encourages direct access to attributes, so avoid creating
+  unnecessary getter and setter methods. Instead, use properties if you need to control access or validation.
+  (see Python in a Nutshell, 3rd Edition, Martelli, Ravenscroft and Holden).
+
+## Conclusion
+
+While Python lacks built-in access modifiers, its naming conventions offer a consistent and effective
+way to manage attribute visibility and encapsulation. By following these conventions, developers can
+effectively manage access to class internals and maintain encapsulation.
+
+## References
+
+- [Python Data Model](https://docs.python.org/3/reference/datamodel.html#attributes)
+- [Python Naming Conventions](https://www.python.org/dev/peps/pep-0008/#descriptive-naming-styles)
+- [Head First Design Patterns, 2nd Edition](https://www.oreilly.com/library/view/head-first-design/9781492077992/)
+- [Python Name Mangling](https://docs.python.org/3/tutorial/classes.html#private-variables)

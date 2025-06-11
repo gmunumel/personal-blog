@@ -1,5 +1,6 @@
 import React from "react";
 import PythonRunner from "@/app/components/PythonRunner";
+import GenericCodeEditor from "@/app/components/GenericCodeEditor";
 
 export const mdxComponents = {
   pre: (props: React.ComponentPropsWithoutRef<"pre">) => {
@@ -16,12 +17,21 @@ export const mdxComponents = {
       lang = (props.children.props as { className?: string }).className;
     }
 
-    const noRun = code?.trimStart().startsWith("# no-run") ?? false;
-    const codeToRun =
-      noRun && code ? code.split("\n").slice(1).join("\n") : code;
+    const language =
+      lang
+        ?.split(" ")
+        .find((cls) => cls.startsWith("language-"))
+        ?.replace("language-", "") ?? "";
 
-    if (lang && lang.includes("language-python")) {
+    if (language === "python") {
+      const noRun = code?.trimStart().startsWith("# no-run") ?? false;
+      const codeToRun =
+        noRun && code ? code.split("\n").slice(1).join("\n") : code;
+
       return <PythonRunner code={codeToRun ?? ""} noRun={noRun} />;
+    }
+    if (language) {
+      return <GenericCodeEditor code={code ?? ""} language={language} />;
     }
     return <pre {...props} />;
   },

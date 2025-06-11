@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { MDXProvider } from "@mdx-js/react";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
@@ -9,6 +9,7 @@ import Loader from "@/app/components/Loader";
 
 const PostClient = ({ slug }: { slug: string }) => {
   const [tocOpen, setTocOpen] = useState(true);
+  const [showScroll, setShowScroll] = useState(false);
 
   const Post = useMemo(
     () =>
@@ -24,6 +25,14 @@ const PostClient = ({ slug }: { slug: string }) => {
       ),
     [slug]
   );
+
+  useEffect(() => {
+    const onScroll = () => setShowScroll(window.scrollY > 200);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const handleScrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8 max-w-9/10 mx-auto p-4 relative">
@@ -58,6 +67,15 @@ const PostClient = ({ slug }: { slug: string }) => {
           <Post />
         </MDXProvider>
       </article>
+      {showScroll && (
+        <button
+          onClick={handleScrollTop}
+          aria-label="Scroll to top"
+          className="fixed bottom-8 right-8 z-50 bg-gray-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-gray-700 transition-colors cursor-pointer"
+        >
+          <span className="text-2xl">↑</span>
+        </button>
+      )}
     </div>
   );
 };

@@ -1,0 +1,271 @@
+---
+title: Save Memory with `__slots__`
+tags:
+  - python
+  - performance
+  - memory-optimization
+synopsis: >
+  The `__slots__` mechanism in Python allows you to explicitly declare data members for your classes,
+  leading to significant memory savings, especially in large applications with many instances of user-defined classes.
+date: 2024-07-17
+---
+
+# Save Memory with `__slots__`
+
+To fully understand the `__slots__` mechanism in Python, we need to first understand how Python handles memory allocation.
+Specifically, how it allocates memory dynamically for instance attributes in a class.
+
+## Memory allocation in Python
+
+By default, Python uses a dictionary to store instance attributes, which allows for flexible and dynamic attribute assignment.
+You can inspect this information by inspecting the `__dict__` attribute.
+
+```python
+class MyClass:
+  def __init__(self, attr1, attr2):
+    self.attr1 = attr1
+    self.attr2 = attr2
+
+my_instance = MyClass(1, 2)
+print(my_instance.__dict__)
+```
+
+This will output: `{'attr1': 1, 'attr2': 2}`. By definition, [dictionaries in Python](https://docs.python.org/3/tutorial/datastructures.html#dictionaries) are key-value pairs,
+where:
+
+- **keys:** must be immutable types such as _numbers_, _strings_, or _tuples_ (e.g., a `list` is only allowed if its elements are all immutable).
+- **values:** can be mutable or immutable and may include combinations like _lists_, _dictionaries_, or _sets_.
+
+The dictionary below uses immutable types for both keys and values. This ensures the reference held by the dictionary always points to the same objects in memory.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/save-memory-with-slots/immutable_dict.png"
+    alt="A simple dictionary in Python using immutable types"
+    width="50%"
+    height="60%"
+    className="mb-2 shadow rounded-lg border border-gray-200 dark:border-gray-700 text-center mx-auto"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    A simple dictionary in Python using immutable types
+  </figcaption>
+</figure>
+
+In the next image, the dictionary includes a key-value pair where the value is a mutable type (e.g., a `list`). While the
+dictionary still holds a reference to the original object, the mutable value `["foo", 42]` breaks immutability. Python must
+allocate new memory for such values since it cannot guarantee the value won’t change.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/save-memory-with-slots/mutable_dict.png"
+    alt="A dictionary in Python with a mutable list value"
+    width="50%"
+    height="60%"
+    className="mb-2 shadow rounded-lg border border-gray-200 dark:border-gray-700 text-center mx-auto"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    A dictionary in Python with a mutable list value
+  </figcaption>
+</figure>
+
+The dynamic nature of dictionaries allows for flexible attribute assignment, but it also has some downsides.
+One of the main drawbacks is that dictionaries are not memory-efficient, especially when creating a large number
+of instances of a class. This is because each instance of a class with a `__dict__` attribute has its own dictionary,
+which can result in significant memory overhead. One alternative is to use the `__slots__` mechanism, which
+allows you to explicitly declare data members for a class, leading to substantial memory savings—particularly in large applications with many instances of user-defined classes.
+
+## Using `__slots__` to save memory
+
+The `__slots__` mechanism provides a way to explicitly declare data members for a class,
+which can lead to significant memory savings. When a class defines `__slots__`, Python uses a
+more memory-efficient internal structure to store instance attributes, eliminating the need for a
+per-instance dictionary.
+
+```python
+class MyClass:
+  __slots__ = ['attr1', 'attr2']
+
+  def __init__(self, attr1, attr2):
+    self.attr1 = attr1
+    self.attr2 = attr2
+
+my_instance = MyClass(1, 2)
+try:
+  print(my_instance.__dict__)
+except AttributeError:
+  print("AttributeError raised")
+
+print(my_instance.attr1)
+print(my_instance.attr2)
+
+try:
+  my_instance.attr3 = 3
+except AttributeError as e:
+  print(f"AttributeError: {e}")
+```
+
+`__slots__` must be defined at class creation and cannot be added or modified later. The attribute
+names can be a `tuple`, `list`, or `set`, but a `list` is most commonly used.
+
+### Subclassing with `__slots__`
+
+When subclassing a class that uses `__slots__`, the subclass must also define its own `__slots__` if it
+wants to use the memory-efficient storage. Otherwise, it will use `__dict__` for its attributes.
+
+Below is an example of a subclass that inherits from a class with `__slots__`, but does not define its own `__slots__`:
+
+```python
+class BaseClass:
+  __slots__ = ['base_attr']
+
+  def __init__(self, base_attr):
+    self.base_attr = base_attr
+
+class SubClass(BaseClass):
+  pass
+
+sub_instance = SubClass(1)
+print(sub_instance.__dict__)
+
+sub_instance.base_attr = 2
+print(sub_instance.base_attr)
+
+sub_instance.foo = "bar"
+print(sub_instance.__dict__)
+```
+
+You can see that the `SubClass` does not define its own `__slots__`, so it inherits the `__slots__` from `BaseClass`.
+This means that `SubClass` can access the `base_attr` attribute, but it can also add new attributes dynamically,
+which will be stored in the `__dict__` of the instance.
+
+Next the subclass and the base class defines `__slots__`, but with different attributes names:
+
+```python
+class BaseClass:
+  __slots__ = ['base_attr']
+
+  def __init__(self, base_attr):
+    self.base_attr = base_attr
+
+class SubClass(BaseClass):
+  __slots__ = ['sub_attr']
+
+  def __init__(self, base_attr, sub_attr):
+    super().__init__(base_attr)
+    self.sub_attr = sub_attr
+
+base_instance = BaseClass(1)
+sub_instance = SubClass(2, 3)
+
+try:
+  print(base_instance.__dict__)
+except AttributeError as e:
+  print(f"AttributeError: {e}")
+try:
+  print(sub_instance.__dict__)
+except AttributeError as e:
+  print(f"AttributeError: {e}")
+
+print(base_instance.base_attr)
+print(sub_instance.base_attr)
+print(sub_instance.sub_attr)
+```
+
+In this case, `SubClass` defines its own `__slots__`, which means it can only access the `sub_attr` attribute and the `base_attr` attribute from the `BaseClass`.
+This means that `SubClass` cannot add new attributes dynamically, and any attempt to do so will raise an `AttributeError`.
+
+### Measure memory savings
+
+To measure the memory savings achieved by using `__slots__`, we can use
+the `sys.getsizeof()` function to compare the memory usage of a class with and without `__slots__`.
+
+```python
+import time
+import tracemalloc
+
+class MyClassWithSlots:
+  __slots__ = ['attr1', 'attr2']
+
+  def __init__(self, attr1, attr2):
+    self.attr1 = attr1
+    self.attr2 = attr2
+
+class MyClassWithoutSlots:
+  def __init__(self, attr1, attr2):
+    self.attr1 = attr1
+    self.attr2 = attr2
+
+def test_memory_and_time(cls, label):
+  print(f"\n--- Testing {label} ---")
+
+  tracemalloc.start()
+
+  mem_before = tracemalloc.get_traced_memory()[0]
+
+  start_time = time.time()
+  instances = [cls(i, i + 1) for i in range(1_000_000)]
+  end_time = time.time()
+
+  mem_after, peak = tracemalloc.get_traced_memory()
+
+  tracemalloc.stop()
+
+  print(f"{label} - Time taken: {end_time - start_time:.2f}s")
+  print(f"{label} - Memory before: {mem_before / 1024 / 1024:.2f} MB")
+  print(f"{label} - Memory after: {mem_after / 1024 / 1024:.2f} MB")
+
+  return instances
+
+instances_with_slots = test_memory_and_time(MyClassWithSlots, "With __slots__")
+instances_without_slots = test_memory_and_time(MyClassWithoutSlots, "Without __slots__")
+```
+
+This will output the memory size of both classes for the creation of 1,000,000 instances,
+allowing you to see the difference in memory usage before and after execution.
+
+From the output, you'll notice that the class with `__slots__` uses significantly
+less memory than the class without `__slots__`. And the `__slots__` class is faster to create instances,
+which is an added performance benefit.
+
+### Limitations of `__slots__`
+
+While `__slots__` can lead to significant memory savings, it also has some limitations:
+
+- **No Dynamic Attributes:** once `__slots__` is defined, you cannot add new attributes dynamically to class instances.
+- **Inheritance:** subclasses must define their own `__slots__` to benefit from the same memory optimizations.
+- **No Default Values:** default values must be assigned in the `__init__` method; `__slots__` does not support direct default assignments.
+- **No Weak References:** instances of classes with `__slots__` cannot be weakly referenced unless you include `weakref` in the slots.
+- `@cached_property:` this decorator does not work with `__slots__`, as it relies on `__dict__`. Consider using third-party alternatives like cached-property.
+
+### When to use `__slots__`
+
+Using `__slots__` is particularly beneficial in the following scenarios:
+
+- **Large Number of Instances**: if your application creates a large number of instances of a class,
+  using `__slots__` can lead to significant memory savings.
+- **Memory-Constrained Environments**: in environments where memory is limited, such as
+  embedded systems or low-memory devices, using `__slots__` can help reduce memory usage.
+- **Performance-Critical Applications**: if your application requires high performance and
+  low memory overhead, using `__slots__` can help improve attribute access speed and reduce memory fragmentation.
+
+### `__slots__` vs. Numpy's `ndarray`
+
+While `__slots__` is a powerful mechanism for optimizing memory usage in Python classes, it is not the only option available.
+Numpy's `ndarray` is another powerful tool for efficient memory management, especially when dealing with large datasets or numerical computations.
+Numpy's `ndarray` provides a fixed-size, homogeneous array structure that allows for efficient storage and manipulation of large datasets.
+However, it is important to note that `__slots__` and Numpy's `ndarray` serve different purposes and are not directly comparable.
+Numpy's `ndarray` is designed for [numerical computations](https://numpy.org/doc/stable/user/whatisnumpy.html#what-is-numpy) and provides a wide range of mathematical operations, while `__slots__` is a
+mechanism for optimizing memory usage in Python classes.
+
+## Conclusion
+
+The `__slots__` mechanism in Python provides a way to explicitly declare data members for a class, leading to significant memory savings and performance improvements.
+This is particularly useful in applications that create a large number of instances or run in memory-constrained environments.
+By using `__slots__`, you can optimize memory usage and improve the performance of your Python applications.
+
+## References
+
+- [Python Documentation: Data Structures](https://docs.python.org/3/tutorial/datastructures.html#dictionaries)
+- [Python Documentation: Slots](https://docs.python.org/3/reference/datamodel.html#slots)
+- [Python Documentation: Memory Management](https://docs.python.org/3/c-api/memory.html)
+- [Fluent Python, 2nd Edition](https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/)

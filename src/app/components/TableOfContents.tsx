@@ -35,7 +35,7 @@ const TableOfContents = () => {
   }, []);
 
   return (
-    <nav className="sticky top-8 p-4 rounded w-64 max-h-[80vh] mt-8 overflow-auto">
+    <nav className="table-content sticky top-8 p-4 rounded w-64 max-h-[80vh] mt-8 overflow-auto">
       <div className="flex items-center justify-between mb-2">
         <span className="font-bold">Contents</span>
       </div>
