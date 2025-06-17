@@ -25,17 +25,17 @@ const NavBar = () => {
         />
         <span className={linkClass("/")}>Home</span>
       </Link>
-      <Link href="/posts" className={linkClass("/posts")}>
+      <Link href="/posts" className={linkClass("/posts/")}>
         Posts
       </Link>
-      <Link href="/portfolio" className={linkClass("/portfolio")}>
+      <Link href="/portfolio" className={linkClass("/portfolio/")}>
         Portfolio
       </Link>
-      <Link href="/about" className={linkClass("/about")}>
+      <Link href="/about" className={linkClass("/about/")}>
         About Me
       </Link>
       <div className="flex items-center gap-x-1">
-        <Link href="/lolo" className={linkClass("/lolo")}>
+        <Link href="/lolo" className={linkClass("/lolo/")}>
           Lolo
         </Link>
         <span aria-label="lion" role="img" className="align-middle">

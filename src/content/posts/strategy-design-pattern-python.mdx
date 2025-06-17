@@ -35,33 +35,32 @@ breaking the principle of [one reason to change (S of _SOLID_)](https://en.wikip
 ```python
 from dataclasses import dataclass
 
-
 @dataclass
 class SocialMedia:
-  username: str
-  social_media_type: str
+    username: str
+    social_media_type: str
 
-  def post(self, content: str) -> None:
-    if self.social_media_type == "Instagram":
-      self.instagram_story(content)
-    elif self.social_media_type == "Facebook":
-      self.facebook_story(content)
-    elif self.social_media_type == "Twitter":
-      self.twitter_story(content)
-    else:
-      raise ValueError("Unsupported social media type")
+    def post(self, content: str) -> None:
+        if self.social_media_type == "Instagram":
+            self.instagram_story(content)
+        elif self.social_media_type == "Facebook":
+            self.facebook_story(content)
+        elif self.social_media_type == "Twitter":
+            self.twitter_story(content)
+        else:
+            raise ValueError("Unsupported social media type")
 
-  def set_social_media_type(self, social_media_type: str) -> None:
-    self.social_media_type = social_media_type
+    def set_social_media_type(self, social_media_type: str) -> None:
+        self.social_media_type = social_media_type
 
-  def instagram_story(self, content: str) -> None:
-    print(f"Posting to Instagram: {content}, by {self.username}")
+    def instagram_story(self, content: str) -> None:
+        print(f"Posting to Instagram: {content}, by {self.username}")
 
-  def facebook_story(self, content: str) -> None:
-    print(f"Posting to Facebook: {content}, by {self.username}")
+    def facebook_story(self, content: str) -> None:
+        print(f"Posting to Facebook: {content}, by {self.username}")
 
-  def twitter_story(self, content: str) -> None:
-    print(f"Posting to Twitter: {content}, by {self.username}")
+    def twitter_story(self, content: str) -> None:
+        print(f"Posting to Twitter: {content}, by {self.username}")
 
 
 social_media = SocialMedia("John", "Instagram")
@@ -77,16 +76,16 @@ social_media.post("Hello, Twitter!")
 To improve the design, we can create an interface `Story` that defines a method `post`.
 Each social media platform will implement this interface, allowing us to encapsulate the posting logic for each platform. The UML class diagram below illustrate that.
 
-- **Context:** provide a computation interchangeable component, in this case `SocialMedia`.
-- **Strategy:** the common interface that implement the different algorithms: `Story`.
-- **Concrete strategy:** one of the concrete subclasses of Strategy: `InstagramStory`, `FacebookStory` and `TwitterStory`.
+- **Context**: Provide a computation interchangeable component, in this case `SocialMedia`.
+- **Strategy**: The common interface that implement the different algorithms: `Story`.
+- **Concrete strategy**: One of the concrete subclasses of Strategy: `InstagramStory`, `FacebookStory` and `TwitterStory`.
 
 <figure className="flex flex-col items-center w-full">
   <img
     src="/strategy-design-pattern-python/class_diagram.png"
     alt="UML class diagram for Strategy Design Pattern in Python"
     width="400"
-    className="mb-2 shadow rounded-lg border border-gray-200 dark:border-gray-700 text-center mx-auto"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
   />
   <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
     UML class diagram for Strategy Design Pattern in Python
@@ -97,38 +96,34 @@ Each social media platform will implement this interface, allowing us to encapsu
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
-
 class Story(ABC):
-  @abstractmethod
-  def post(self, content: str, username: str) -> None:
-    pass
-
+    @abstractmethod
+    def post(self, content: str, username: str) -> None:
+        pass
 
 class InstagramStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Instagram: {content}, by {username}")
-
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Instagram: {content}, by {username}")
 
 class FacebookStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Facebook: {content}, by {username}")
-
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Facebook: {content}, by {username}")
 
 class TwitterStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Twitter: {content}, by {username}")
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Twitter: {content}, by {username}")
 
 
 @dataclass
 class SocialMedia:
-  username: str
-  social_media_type: Story
+    username: str
+    social_media_type: Story
 
-  def post(self, content: str) -> None:
-    self.social_media_type.post(content, self.username)
+    def post(self, content: str) -> None:
+        self.social_media_type.post(content, self.username)
 
-  def set_social_media_type(self, social_media_type: Story) -> None:
-    self.social_media_type = social_media_type
+    def set_social_media_type(self, social_media_type: Story) -> None:
+        self.social_media_type = social_media_type
 
 
 social_media = SocialMedia("John", InstagramStory())
@@ -155,26 +150,22 @@ This will help keep our code organized and maintainable, especially as we add mo
 # interface_social_media.py
 from abc import ABC, abstractmethod
 
-
 class Story(ABC):
-  @abstractmethod
-  def post(self, content: str, username: str) -> None:
-    pass
-
+    @abstractmethod
+    def post(self, content: str, username: str) -> None:
+        pass
 
 class InstagramStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Instagram: {content}, by {username}")
-
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Instagram: {content}, by {username}")
 
 class FacebookStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Facebook: {content}, by {username}")
-
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Facebook: {content}, by {username}")
 
 class TwitterStory(Story):
-  def post(self, content: str, username: str) -> None:
-    print(f"Posting to Twitter: {content}, by {username}")
+    def post(self, content: str, username: str) -> None:
+        print(f"Posting to Twitter: {content}, by {username}")
 
 
 social_media_list = [InstagramStory(), FacebookStory(), TwitterStory()]
@@ -183,14 +174,13 @@ social_media_list = [InstagramStory(), FacebookStory(), TwitterStory()]
 # social_media.py
 from interface_social_media import social_media_list
 
-
 def print_all_stories(username: str) -> None:
-  for social_media_item in social_media_list:
-    social_media_item.post("Hello, World!", username)
+    for social_media_item in social_media_list:
+        social_media_item.post("Hello, World!", username)
 
 
 if __name__ == "__main__":
-  print_all_stories("John")
+    print_all_stories("John")
 ```
 
 This modular approach allows us to easily add new social media platforms by simply
@@ -215,65 +205,62 @@ Story = Callable[["SocialMedia"], str]
 stories: list[Story] = []
 
 def story(story_func: Story) -> Story:
-  stories.append(story_func)
-  return story_func
-
+    stories.append(story_func)
+    return story_func
 
 @story
 def instagram_story(social_media: "SocialMedia") -> str:
-  content = "Hello, Instagram!"
-  post = f"Posting to Instagram: {content}, by {social_media.username}"
-  return post
-
+    content = "Hello, Instagram!"
+    post = f"Posting to Instagram: {content}, by {social_media.username}"
+    return post
 
 @story
 def facebook_story(social_media: "SocialMedia") -> str:
-  content = "Hello, Facebook!"
-  post = f"Posting to Facebook: {content}, by {social_media.username}"
-  return post
-
+    content = "Hello, Facebook!"
+    post = f"Posting to Facebook: {content}, by {social_media.username}"
+    return post
 
 @story
 def twitter_story(social_media: "SocialMedia") -> str:
-  content = "Hello, Twitter!"
-  post = f"Posting to Twitter: {content}, by {social_media.username}"
-  return post
+    content = "Hello, Twitter!"
+    post = f"Posting to Twitter: {content}, by {social_media.username}"
+    return post
 
 
 @dataclass(frozen=True)
 class SocialMedia:
-  username: str
-  story: Optional[Callable[["SocialMedia"], str]] = None
+    username: str
+    story: Optional[Callable[["SocialMedia"], str]] = None
 
-  def timeline(self) -> str:
-    if self.story is None:
-      raise ValueError("No story function set for this social media.")
-    return self.story(self)
+    def timeline(self) -> str:
+        if self.story is None:
+            raise ValueError("No story function set for this social media.")
+        return self.story(self)
 
 
 def print_all_stories(social_media: SocialMedia) -> None:
-  for story_item in stories:
-    print(story_item(social_media))
+    for story_item in stories:
+        print(story_item(social_media))
 
 
 if __name__ == "__main__":
-  user = SocialMedia("John", story=instagram_story)
-  print(user.timeline())
-  print_all_stories(user)
+    user = SocialMedia("John", story=instagram_story)
+    print(user.timeline())
+    print_all_stories(user)
 ```
 
 This approach allows us to define multiple story functions and register them using the `@story` decorator.
 The `SocialMedia` class can then use these registered story functions to post content to different platforms.
 This design pattern is flexible and allows for easy extension by simply adding new story functions without modifying the existing code.
 
-## Conclusion
+# Conclusion
 
 The Strategy design pattern is a powerful way to encapsulate algorithms and make them interchangeable.
 By defining a common interface and implementing concrete strategies, we can easily switch between different
 algorithms without modifying the client code. This approach adheres to the open-closed principle and
 promotes maintainability and scalability in our codebase.
 
-## References
+# References
 
 - [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
 - [Python Design Patterns](https://python-patterns.guide/)

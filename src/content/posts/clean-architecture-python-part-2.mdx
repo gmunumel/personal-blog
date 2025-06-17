@@ -1,0 +1,1058 @@
+---
+title: Clean Architecture in Python - Part 2
+tags:
+  - python
+  - clean-architecture
+  - domain-driven-design
+synopsis: >
+  A practical example illustrating the Clean Architecture pattern in Python.
+date: 2024-10-30
+---
+
+# Clean Architecture in Python - Part 2
+
+This post is a continuation of the previous article on [Clean Architecture in Python](/posts/clean-architecture-python-part-1).
+
+In this part, we implement a simple use case to demonstrate how to structure your code, implement use cases, and write basic tests
+using the principles of Clean Architecture.
+
+Note that this is a simplified example to illustrate the concepts. In a real-world application, you would have more complex logic,
+error handling, and possibly more layers.
+
+The implementation follows **_Domain-Driven Design (DDD)_** principles, where the core business logic is separated from the infrastructure concerns.
+This allows for a more maintainable and testable codebase.
+
+All the code is available on [Clean Buckpal App](https://github.com/gmunumel/clean-buckpal-app).
+
+## Scenario
+
+Let's implement a payment processing system, named _Buckpal_, that allows users to transfer money between users.
+
+This is a Python implementation of Tom Hombergs' _Buckpal_ application from his book
+[Get Your Hands Dirty with Clean Architecture, 2nd Edition](https://www.packtpub.com/en-ec/product/get-your-hands-dirty-on-clean-architecture-9781805128373?srsltid=AfmBOoracayktJ6j20eNs8nUSH2z3Fh6PdjBf_1ZHSyU_zSlmXvzZ4_t).
+
+## Structure
+
+Below is the structure of the project. Focus on the organization rather than implementation details.
+
+```
+src/
+├── app.py
+├── adapter/
+│   ├── inbound/
+│   │   └── web/
+│   │       ├── endpoints.py
+│   │       ├── send_money_controller.py
+│   │       └── web_model.py
+│   └── outbound/
+│       └── persistence/
+│           ├── account_persistence_adapter.py
+│           ├── in_memory_data_account_repository.py
+│           └── persistence_model.py
+├── application/
+│   ├── domain/
+│   │   ├── model/
+│   │   │   ├── account.py
+│   │   │   ├── account_id.py
+│   │   │   ├── activity.py
+│   │   │   ├── activity_id.py
+│   │   │   ├── activity_window.py
+│   │   │   └── money.py
+│   │   └── service/
+│   │       └── send_money_service.py
+│   └── port/
+│       ├── inbound/
+│       │   ├── send_money_command.py
+│       │   └── send_money_use_case.py
+│       └── outbound/
+│           └── update_account_state_port.py
+├── common/
+│   └── container.py
+└── tests/
+    ├── ... (omitted for brevity, but follows similar structure)
+```
+
+The project is structured into three main layers:
+
+- **Adapter Layer**: Contains the inbound and outbound adapters. The inbound adapters handle incoming requests (e.g., web endpoints),
+  while the outbound adapters handle outgoing requests (e.g., persisting data to a database).
+- **Application Layer**: Contains the core business logic, including domain models and services. This layer implements the use cases of the application.
+- **Common Layer**: Contains common utilities.
+
+The key points of this structure are:
+
+- **Separation of Concerns**: Each layer has a distinct responsibility, improving maintainability and testability.
+- **Dependency Inversion**: The application layer depends on abstractions (**ports**) rather than concrete implementations, allowing for easier testing and flexibility.
+- **Domain-Driven Design**: The domain models represent the core business logic, and the services implement the use cases of the application.
+- **Dependency Injection**: The application uses a [dependency injection](https://python-dependency-injector.ets-labs.org/) container to manage the dependencies between the layers.
+
+This is a reference structure that can be adapted to your specific use case. The goal is to keep the code organized and maintainable,
+following the principles of Clean Architecture.
+
+## Implementation
+
+We will implement a simple use case to demonstrate how to structure your code, implement use cases, and create basic tests using the principles of Clean Architecture.
+
+We received a request from the corporate team to implement a payment processing system that allows users to transfer money between users.
+
+Following _DDD_ principles, we will create domain models, services, and use cases to implement this functionality, instead of focusing on infrastructure
+concerns such as the database schema and other technical details.
+
+The following diagram illustrates the architecture of the application:
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/clean-architecture-python-part-2/clean_buckpal_overview.png"
+    alt="Overview of the Clean Buckpal Architecture"
+    width="900"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Overview of the Clean Buckpal Architecture
+  </figcaption>
+</figure>
+
+You can see that the architecture is divided into six main layers:
+
+- **Adapter Inbound Web**: This layer contains the inbound adapters that handle incoming requests, such as web endpoints. Also a mapper for
+  converting requests to commands and queries.
+- **Application Port Inbound**: This layer contains the inbound ports that define the use cases of the application. These ports are implemented by the domain services.
+- **Application Domain Service**: This layer contains the domain services that implement the business logic of the application.
+- **Application Domain Model**: This layer contains the domain models that represent the core business entities.
+- **Application Port Outbound**: This layer contains the outbound ports that define the interfaces for external dependencies, such as databases or message brokers.
+- **Adapter Outbound Persistence**: This layer contains the outbound adapters that handle the persistence of data to external storage systems.
+  Also a mapper for converting domain models to persistence models.
+
+Following is the Sequence Diagram that illustrates the flow of the application when a user sends money to another user:
+
+```mermaid
+// title: Sequence Diagram - Send Money Flow
+// caption: Sequence of a send money request through Clean Architecture layers.
+// css: w-full h-full bg-white py-3
+sequenceDiagram
+    participant Client as Client<br/>(HTTP)
+    participant Endpoints as Endpoints<br/>(Web Adapter)
+    participant Controller as SendMoney<br/>Controller
+    participant UseCase as SendMoney<br/>UseCase
+    participant Service as SendMoney<br/>Service
+    participant AccountRepo as Account<br/>Persistence<br/>Adapter
+    participant InMemoryRepo as InMemoryData<br/>Account<br/>Repository
+
+    Client->>Endpoints: POST /send-money
+    Endpoints->>Controller: send_money(request)
+    Controller->>UseCase: send_money_command
+    UseCase->>Service: send_money(command)
+    Service->>AccountRepo: load_account(), update_account_state()
+    AccountRepo->>InMemoryRepo: find_by_id(), save(), update()
+    InMemoryRepo-->>AccountRepo: Account data
+    AccountRepo-->>Service: Account entity
+    Service-->>UseCase: Activity
+    UseCase-->>Controller: Activity
+    Controller-->>Endpoints: SendMoneyResponse
+    Endpoints-->>Client: HTTP Response
+%%{init:{'themeCSS':'g text tspan, g g text tspan { font-size: 19px; }, text.messageText { font-size: 20px !important; }'}}%%
+```
+
+This sequence diagram illustrates the flow of a send money request through the Clean Architecture layers.
+The client sends a request to the web endpoints, which are handled by the `SendMoneyController`. Then the controller maps the
+request to a command and calls the `SendMoneyUseCase`. The command is processed by the `SendMoneyService`,
+which interacts with the `AccountPersistenceAdapter` to load the accounts and update their state.
+Finally, the response is returned to the client.
+
+### Domain Models
+
+The domain models represent the core business logic of the application. In this case, we have `Account`, `Activity`, and `Money` models.
+
+```python
+# no-run
+# src/application/domain/model/account.py
+from dataclasses import dataclass
+from datetime import datetime
+from uuid import uuid4
+from src.application.domain.model.money import Money
+from src.application.domain.model.account_id import AccountId
+from src.application.domain.model.activity_window import ActivityWindow
+from src.application.domain.model.activity import Activity
+from src.application.domain.model.activity_id import ActivityId
+
+@dataclass()
+class Account:
+    id: AccountId
+    baseline_balance: Money
+    activity_window: ActivityWindow
+
+    def calculate_balance(self) -> Money:
+        return Money.add(
+            self.baseline_balance,
+            self.activity_window.calculate_balance(self.id),
+        )
+
+    def withdraw(self, money: Money, target_account_id: AccountId) -> bool:
+        if not self.may_withdraw(money):
+            return False
+
+        withdrawal = Activity(
+            id=ActivityId(uuid4().int),
+            owner_account_id=self.id,
+            source_account_id=self.id,
+            target_account_id=target_account_id,
+            timestamp=datetime.now(),
+            money=money,
+        )
+        self.activity_window.add_activity(withdrawal)
+        return True
+
+    def may_withdraw(self, money: Money) -> bool:
+        return Money.add(self.calculate_balance(), money.negate()).is_positive_or_zero()
+
+    def deposit(self, money: Money, source_account_id: AccountId) -> Activity:
+        deposit = Activity(
+            id=ActivityId(uuid4().int),
+            owner_account_id=self.id,
+            source_account_id=source_account_id,
+            target_account_id=self.id,
+            timestamp=datetime.now(),
+            money=money,
+        )
+        self.activity_window.add_activity(deposit)
+        return deposit
+```
+
+`Account` entity represents a user's account in the payment processing system. It has a unique identifier (`id`), a baseline balance (`baseline_balance`),
+and an activity window (`activity_window`) that contains the history of activities (transactions) related to the account. There are methods to calculate the balance,
+withdraw money, check if the withdrawal is allowed, and deposit money into the account.
+
+```python
+# no-run
+# src/application/domain/model/activity.py
+from dataclasses import dataclass
+from datetime import datetime
+
+from src.application.domain.model.account_id import AccountId
+from src.application.domain.model.activity_id import ActivityId
+from src.application.domain.model.money import Money
+
+@dataclass
+class Activity:
+    id: ActivityId
+    owner_account_id: AccountId
+    source_account_id: AccountId
+    target_account_id: AccountId
+    timestamp: datetime
+    money: Money
+```
+
+The entity `Activity` represents a transaction in the payment processing system. It has a unique identifier (`id`),
+the account that owns the activity (`owner_account_id`), the source account (`source_account_id`), the target account (`target_account_id`),
+the timestamp of the activity (`timestamp`), and the amount of money involved in the activity (`money`).
+
+```python
+# no-run
+# src/application/domain/model/money.py
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Money:
+    amount: float
+
+    @classmethod
+    def add(cls, money: "Money", other: "Money") -> "Money":
+        return Money(money.amount + other.amount)
+
+    @classmethod
+    def subtract(cls, money: "Money", other: "Money") -> "Money":
+        return Money(money.amount - other.amount)
+
+    @classmethod
+    def of(cls, amount: float) -> "Money":
+        return Money(amount)
+
+    @classmethod
+    def zero(cls) -> "Money":
+        return Money.of(0.0)
+
+    def is_positive(self) -> bool:
+        return self.amount > 0
+
+    def is_positive_or_zero(self) -> bool:
+        return self.amount >= 0
+
+    def negate(self) -> "Money":
+        return Money(-self.amount)
+
+    def is_greater_than_or_equal_to(self, money: "Money") -> bool:
+        return self.amount - money.amount >= 1
+```
+
+Value object `Money` represents an amount of money. It has methods to perform arithmetic operations, such as addition and subtraction,
+and to check if the amount is positive or zero. It also provides a way to create a `Money` instance from a float value.
+
+```python
+# no-run
+# src/application/domain/model/account_id.py
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class AccountId:
+    id: int
+```
+
+`AccountId` is a value object that represents the unique identifier of an account. It is immutable and can be used to identify accounts in the system.
+
+```python
+# no-run
+# src/application/domain/model/activity_id.py
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class ActivityId:
+    id: int
+```
+
+`ActivityId` is a value object that represents the unique identifier of an activity. It is immutable and can be used to identify activities in the system.
+
+Next we have the `ActivityWindow` entity, which is responsible for managing the activities of an account within a specific time window.
+
+```python
+# no-run
+# src/application/domain/model/activity_window.py
+from dataclasses import dataclass
+from datetime import datetime
+
+from src.application.domain.model.account_id import AccountId
+from src.application.domain.model.money import Money
+from src.application.domain.model.activity import Activity
+
+@dataclass
+class ActivityWindow:
+    activities: list[Activity]
+
+    def add_activity(self, activity: Activity):
+        self.activities.append(activity)
+
+    def calculate_balance(self, account_id: AccountId) -> Money:
+        deposit_balance = self._calculate_deposit_balance(account_id)
+        withdraw_balance = self._calculate_withdraw_balance(account_id)
+        return Money.add(deposit_balance, withdraw_balance.negate())
+
+    def _calculate_deposit_balance(self, account_id: AccountId) -> Money:
+        deposit_balance = Money.zero()
+        for activity in self.activities:
+        if activity.target_account_id == account_id:
+            deposit_balance = Money.add(deposit_balance, activity.money)
+        return deposit_balance
+
+    def _calculate_withdraw_balance(self, account_id: AccountId) -> Money:
+        withdraw_balance = Money.zero()
+        for activity in self.activities:
+            if activity.source_account_id == account_id:
+                withdraw_balance = Money.add(withdraw_balance, activity.money)
+        return withdraw_balance
+```
+
+The `ActivityWindow` entity is responsible for managing the activities of an account within a specific time window. It has methods to add activities,
+calculate the balance of an account, and calculate the deposit and withdraw balances.
+
+After the definition of domain models, we have the ports.
+
+### Ports
+
+Ports define the interfaces for the inbound and outbound communication of the application. They allow the application to interact with external systems
+and define the contracts that the application expects from those systems.
+
+#### Inbound Ports
+
+Inbound ports define the interfaces for the use cases of the application. They represent the entry points to the application and are used by the adapters
+to interact with the application. In this example, we have two inbound ports: `SendMoneyUseCase` and `GetAccountBalanceUseCase`.
+
+For inbound ports, we named them **use case** ports, as they represent the use cases of the application.
+
+```python
+# no-run
+# src/application/port/inbound/send_money_use_case.py
+from abc import ABC, abstractmethod
+
+from src.application.port.inbound.send_money_command import SendMoneyCommand
+from src.application.domain.model.activity import Activity
+
+class SendMoneyUseCase(ABC):
+    @abstractmethod
+    def send_money(self, send_money_command: SendMoneyCommand) -> Activity:
+        pass
+```
+
+The `SendMoneyUseCase` port defines the interface for sending money between accounts. It has a single method `send_money` that takes a `SendMoneyCommand`
+as input and returns an `Activity` representing the transaction.
+
+##### Commands and Queries
+
+In Clean Architecture, commands and queries are often used to pass data to the use cases. Commands are used to perform actions, while queries are used to retrieve data.
+
+```python
+# no-run
+# src/application/port/inbound/send_money_command.py
+from abc import ABC, abstractmethod
+
+from src.application.domain.model.money import Money
+from src.application.domain.model.account_id import AccountId
+
+@dataclass(frozen=True)
+class SendMoneyCommand:
+    source_account_id: AccountId
+    target_account_id: AccountId
+    money: Money
+
+    def __post_init__(self):
+        if not self.source_account_id or not self.target_account_id:
+            raise ValueError("Source and target account IDs must be provided.")
+        if not self.money:
+            raise ValueError("Money amount must be provided.")
+        if not self.money.is_positive():
+            raise ValueError("Money amount must be greater than zero.")
+```
+
+The `SendMoneyCommand` class is a command that encapsulates the data needed to send money between accounts. It includes
+the `source_account_id`, `target_account_id`, and the amount of `money` to be transferred. There is a post-initialization method that validates the command's data,
+ensuring that the source and target account IDs are provided, the money amount is specified, and the amount is positive.
+
+An example of a query port would be:
+
+```python
+# no-run
+# src/application/port/inbound/get_account_balance_use_case.py
+from abc import ABC, abstractmethod
+
+from src.application.domain.model.account_id import AccountId
+
+@dataclass(frozen=True)
+class GetAccountBalanceQuery:
+    account_id: AccountId
+```
+
+The `GetAccountBalanceQuery` class is a query that encapsulates the data needed to retrieve the balance of an account.
+It includes the `account_id` of the account whose balance is being queried.
+
+#### Outbound Ports
+
+Outbound ports define the interfaces for the external systems that the application interacts with. They allow the application to communicate with
+external systems, such as databases or message queues, without being tightly coupled to their implementations.
+
+```python
+# no-run
+# src/application/port/outbound/update_account_state_port.py
+from abc import ABC, abstractmethod
+
+from src.application.domain.model.account import Account
+
+class UpdateAccountStatePort(ABC):
+    @abstractmethod
+    def update_activities(self, accounts: list[Account]):
+        pass
+
+    @abstractmethod
+    def update_accounts(self, accounts: list[Account]):
+        pass
+```
+
+The `UpdateAccountStatePort` port defines the interface for updating the state of accounts in an external system. It has two methods:
+
+- `update_activities`: Updates the activities of the accounts.
+- `update_accounts`: Updates the accounts themselves.
+
+### Domain Services
+
+Domain services contain the core business logic of the application. They implement the use cases defined by the ports and interact with the domain models.
+
+```python
+# no-run
+# src/application/domain/service/send_money_service.py
+from src.application.domain.model.account import Account
+from src.application.domain.model.activity import Activity
+# Other imports omitted for brevity
+
+DAYS_BEFORE = 10
+
+class SendMoneyService(SendMoneyUseCase):
+    def __init__(
+            self,
+            load_account_port: LoadAccountPort,
+            account_lock: AccountLock,
+            update_account_state_port: UpdateAccountStatePort,
+            money_transfer_properties: MoneyTransferProperties,
+        ):
+        self._load_account_port = load_account_port
+        self._account_lock = account_lock
+        self._update_account_state_port = update_account_state_port
+        self._money_transfer_properties = money_transfer_properties
+
+    def send_money(self, send_money_command: SendMoneyCommand) -> Activity:
+        self._check_threshold(send_money_command)
+
+        baseline_date = datetime.now() - timedelta(days=DAYS_BEFORE)
+
+        source_account, target_account = self._load_accounts(
+            send_money_command, baseline_date
+        )
+
+        try:
+            self._lock_account(source_account)
+            money = send_money_command.money
+            if not source_account.withdraw(money, target_account.id):
+                raise WithdrawExceededException(money)
+
+            self._lock_account(target_account)
+            activity = target_account.deposit(money, source_account.id)
+
+            self._update_account_states(source_account, target_account)
+            return activity
+        finally:
+            self._release_accounts(source_account, target_account)
+
+    # Code omitted for brevity
+```
+
+`SendMoneyService` implements the `SendMoneyUseCase` port and contains the business logic for sending money between accounts.
+It uses the `LoadAccountPort` to load the accounts involved in the transaction, the `AccountLock` to lock the accounts during the transaction,
+and the `UpdateAccountStatePort` to update the state of the accounts after the transaction is completed. `MoneyTransferProperties` is a value object
+that contains the properties of the money transfer, such as the maximum transfer threshold.
+
+Before proceeding with the transfer, the service checks if the transfer amount exceeds the threshold defined in `MoneyTransferProperties`.
+If the transfer amount exceeds the threshold, a `TransferExceededException` is raised. Then both accounts are loaded using the `LoadAccountPort`,
+and the service attempts to withdraw the money from the source account and deposit it into the target account. If the withdrawal is successful,
+the service updates the state of both accounts using the `UpdateAccountStatePort`. Finally, the accounts are released from the lock.
+
+See the full implementation [here](https://github.com/gmunumel/clean-buckpal-app/blob/main/src/application/domain/service/send_money_service.py).
+
+### Adapters
+
+Adapters are responsible for converting data between the application and external systems. They implement the ports defined in the application layer
+and provide the necessary functionality to interact with the external systems, such as web frameworks or databases.
+
+#### Inbound Adapters
+
+Inbound adapters handle incoming requests from external systems, such as web frameworks or message queues. They implement the inbound ports
+and convert the incoming requests into commands or queries that can be processed by the application layer.
+
+```python
+# no-run
+# src/adapter/inbound/web/send_money_controller.py
+from dependency_injector.wiring import inject
+
+from src.application.port.inbound.send_money_use_case import SendMoneyUseCase
+from src.adapter.inbound.web.web_model import WebMapper, SendMoneyRequestResponse
+from src.common.log import logger
+
+class SendMoneyController:
+    @inject
+    def __init__(self, send_money_use_case: SendMoneyUseCase):
+        self._send_money_use_case = send_money_use_case
+
+    def send_money(
+        self, send_money_request: SendMoneyRequestResponse
+    ) -> SendMoneyRequestResponse:
+        logger.info("Processing send money request: %s", send_money_request)
+        send_money_command = WebMapper.map_to_send_money_command(send_money_request)
+        activity = self._send_money_use_case.send_money(send_money_command)
+        result = WebMapper.map_to_send_money_entity(activity)
+        logger.info("Send money result: %s", result)
+        return result
+```
+
+The `SendMoneyController` is an inbound adapter that handles incoming requests to send money between accounts. It implements the `SendMoneyUseCase` port
+and uses the `WebMapper` to convert the incoming request into a `SendMoneyCommand`. It then calls the `send_money` method of the `SendMoneyUseCase`
+to process the request and returns the result as a `SendMoneyRequestResponse`.
+
+It also uses the `inject` decorator from the `dependency_injector` library to inject the `SendMoneyUseCase` dependency,
+allowing for easier testing and greater flexibility in implementation.
+
+##### Web Model Mapper
+
+The `WebModel` is responsible for converting web requests and responses to and from the application's domain models and commands.
+
+```python
+# no-run
+# src/adapter/inbound/web/web_model.py
+from pydantic import BaseModel
+# Omitted imports for brevity
+
+class SendMoneyRequestResponse(BaseModel):
+    source_account_id: int
+    target_account_id: int
+    amount: float
+
+class WebMapper:
+    @staticmethod
+    def map_to_send_money_command(
+        send_money_request: SendMoneyRequestResponse,
+    ) -> SendMoneyCommand:
+        return SendMoneyCommand(
+            source_account_id=AccountId(send_money_request.source_account_id),
+            target_account_id=AccountId(send_money_request.target_account_id),
+            money=Money.of(send_money_request.amount),
+        )
+
+# Code omitted for brevity
+```
+
+The `WebMapper` class provides static methods to convert web request and response models to and from the application's domain models and commands.
+
+##### Web Adapter
+
+If you plan to implement a web application, you can use a web framework like _Flask_ or _FastAPI_ to handle the incoming requests and
+route them to the appropriate controllers. In my project, I used _FastAPI_ to implement the web endpoints.
+
+```python
+# no-run
+# src/adapter/inbound/web/endpoints.py
+from fastapi import APIRouter, Depends
+from dependency_injector.wiring import Provide, inject
+# Omitted imports for brevity
+
+router = APIRouter()
+
+@router.post("/send-money", response_model=SendMoneyRequestResponse)
+@inject
+async def send_money(
+    request: SendMoneyRequestResponse,
+    controller: SendMoneyController = Depends(Provide[Container.send_money_controller]),
+    _authenticate_user: User = Depends(authenticate_user),
+):
+    return controller.send_money(request)
+
+@router.get("/accounts-balance/{account_id}", response_model=GetAccountBalanceResponse)
+@inject
+async def get_account_balance(
+    account_id: int,
+    controller: GetAccountBalanceController = Depends(
+        Provide[Container.get_account_balance_controller]
+    ),
+    _authenticate_user: User = Depends(authenticate_user),
+):
+    path_param = GetAccountBalanceParam(account_id=account_id)
+    return controller.get_account_balance(path_param)
+```
+
+The `endpoints.py` file defines the web API endpoints for the application using _FastAPI_. It uses the `APIRouter` to define the routes and
+the `Depends` function to inject the dependencies into the controllers.
+The `send_money` endpoint handles incoming requests to send money between accounts, while the `get_account_balance` endpoint handles requests
+to retrieve the balance of an account.
+
+#### Outbound Adapters
+
+Outbound adapters handle outgoing requests to external systems, such as databases or message queues. They implement the outbound ports
+and provide the necessary functionality to interact with the external systems.
+
+```python
+# no-run
+# src/adapter/outbound/persistence/in_memory_data_account_repository.py
+from abc import ABC, abstractmethod
+from typing import Dict
+
+from src.application.domain.model.account import Account
+from src.application.domain.model.account_id import AccountId
+
+class AbstractAccountRepository(ABC):
+    @abstractmethod
+    def get_accounts(self) -> Dict[AccountId, Account]:
+        pass
+
+    @abstractmethod
+    def save(self, account: Account) -> Account:
+        pass
+
+    @abstractmethod
+    def find_by_id(self, account_id: AccountId) -> Account | None:
+        pass
+
+    class InMemoryDataAccountRepository(AbstractAccountRepository):
+    def __init__(self):
+        self._accounts: Dict[AccountId, Account] = {}
+
+    def get_accounts(self) -> Dict[AccountId, Account]:
+        return self._accounts
+
+    def save(self, account: Account) -> Account:
+        self._accounts[account.id] = account
+        return account
+
+    def update(self, account: Account) -> Account:
+        activity_window = self._accounts[account.id].activity_window
+        new_activity_window = account.activity_window
+        activity_window.activities.append(new_activity_window.activities[0])
+        return self._accounts[account.id]
+
+    def find_by_id(self, account_id: AccountId) -> Account | None:
+        return self._accounts.get(account_id)
+
+    def clear(self):
+        self._accounts.clear()
+```
+
+The `InMemoryDataAccountRepository` is an outbound adapter that implements the `AbstractAccountRepository` interface.
+It provides an in-memory implementation of the account repository, allowing the application to store and retrieve accounts without relying on a database.
+
+Next is the `AccountPersistenceAdapter`, which is responsible for persisting the accounts and activities to the repository.
+
+```python
+# no-run
+# src/adapter/outbound/persistence/account_persistence_adapter.py
+# Omitted imports for brevity
+
+class AccountPersistenceAdapter(
+    LoadAccountPort,
+    ListAccountPort,
+    ListActivityPort,
+    UpdateAccountPort,
+    UpdateAccountStatePort,
+):
+    def __init__(
+        self,
+        account_repository: InMemoryDataAccountRepository,
+        activity_repository: InMemoryDataActivityRepository,
+        ):
+        self._account_repository = account_repository
+        self._activity_repository = activity_repository
+
+    def load_account(self, account_id: AccountId, baseline_date: datetime) -> Account:
+        account = self._account_repository.find_by_id(account_id)
+        if not account:
+            raise ValueError(f"Account with ID {account_id} not found.")
+
+        activities = self._activity_repository.find_by_owner_since(
+        account_id, baseline_date
+        )
+
+        withdrawal_balance = self._activity_repository.get_withdrawal_balance_until(
+        account_id, baseline_date
+        )
+
+        deposit_balance = self._activity_repository.get_deposit_balance_until(
+        account_id, baseline_date
+        )
+
+        return PersistenceMapper.map_to_domain_entity(
+            account, activities, withdrawal_balance, deposit_balance
+        )
+
+    # Code omitted for brevity
+```
+
+The `AccountPersistenceAdapter` implements the outbound ports for loading accounts, listing accounts, listing activities, updating accounts,
+and updating account states. It uses the `InMemoryDataAccountRepository` to load and save accounts,
+and the `InMemoryDataActivityRepository` to manage activities related to the accounts.
+
+The full implementation is available [here](https://github.com/gmunumel/clean-buckpal-app/blob/main/src/adapter/outbound/persistence/account_persistence_adapter.py).
+
+##### Persistence Model Mapper
+
+The `PersistenceMapper` is responsible for converting domain models to persistence models and vice versa.
+
+```python
+# no-run
+# src/adapter/outbound/persistence/persistence_model.py
+from typing import List
+# Omitted imports for brevity
+
+class PersistenceMapper:
+    @staticmethod
+    def map_to_domain_entity(
+        account: Account,
+        activities: list[Activity],
+        withdrawal_balance: float,
+        deposit_balance: float,
+    ) -> Account:
+        baseline_balance = account.baseline_balance
+        balance = Money.subtract(
+            Money.of(deposit_balance), Money.of(withdrawal_balance)
+        )
+        return PersistenceMapper.map_to_account_entity(
+            account.id, Money.add(baseline_balance, balance), activities
+        )
+
+    # Code omitted for brevity
+```
+
+The `PersistenceMapper` class provides static methods to convert domain models to persistence models and vice versa.
+It maps the `Account` entity to a persistence model, converting the activities and balances as needed.
+
+### Entrypoint
+
+Finally, we have the entry point of the application, which initializes the application and starts the web server.
+
+```python
+# no-run
+# src/app.py
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+# Omitted imports for brevity
+
+def create_app() -> FastAPI:
+    container = Container()
+    container.wire(
+        modules=[__name__, "src.common.container", "src.adapter.inbound.web.jwt_utils"]
+    )
+
+    fastapi_app = FastAPI()
+    fastapi_app.container = container
+
+    # Omitted middleware and exception handlers for brevity
+
+    return fastapi_app
+
+app = create_app()
+```
+
+The `app.py` file defines the entry point of the application. It creates a `FastAPI` instance and wires the dependencies using the `Container`.
+It also sets up middleware and exception handlers to handle errors and provide a consistent response format.
+
+#### Dependency Injection
+
+The application uses a dependency injection container to manage dependencies across layers.
+This allows for easier testing and flexibility in the implementation.
+
+The library [dependency-injector](https://python-dependency-injector.ets-labs.org/) is used to create the container and wire the dependencies.
+
+```python
+# no-run
+# src/common/container.py
+from dependency_injector import containers, providers
+# Omitted imports for brevity
+
+class Container(containers.DeclarativeContainer):
+    wiring_config = containers.WiringConfiguration(
+        modules=[
+            "src.adapter.inbound.web.endpoints",
+            "src.application.domain.service.handlers",
+        ]
+    )
+    # Outbound adapters
+    in_memory_data_account_repository = providers.Singleton(
+        InMemoryDataAccountRepository
+    )
+    # Omitted for brevity
+
+    # Persistence adapter
+    persistence_adapter_account = providers.Singleton(
+        AccountPersistenceAdapter,
+        account_repository=in_memory_data_account_repository,
+        activity_repository=in_memory_data_activity_repository,
+    )
+
+    # Domain services
+    send_money_service = providers.Factory(
+        SendMoneyService,
+        load_account_port=persistence_adapter_account,
+        account_lock=account_lock,
+        update_account_state_port=persistence_adapter_account,
+        money_transfer_properties=money_transfer_properties,
+    )
+    # Omitted for brevity
+
+    # Controllers
+    send_money_controller = providers.Factory(
+        SendMoneyController,
+        send_money_use_case=send_money_service,
+    )
+    # Omitted for brevity
+```
+
+The `Container` class defines the dependencies of the application using the `dependency-injector` library. It provides singleton instances of the outbound adapters,
+domain services, and controllers. The `wiring_config` is used to wire the dependencies to the FastAPI application.
+
+See the complete implementation of the container [here](https://github.com/gmunumel/clean-buckpal-app/blob/main/src/common/container.py).
+
+## Tests
+
+The project includes tests to ensure the functionality of the use cases. Tests are organized in a separate `tests` directory, mirroring the structure
+of the application code. This allows for easy navigation and understanding of the tests.
+
+There are tests for the domain models, services, and adapters. The tests use the `pytest` framework.
+
+### Unit Tests
+
+The unit tests focus on testing the individual components of the application, such as domain models.
+
+```python
+# no-run
+# tests/application/domain/model/account_test.py
+from datetime import datetime
+import pytest
+# Omitted imports and fixtures for brevity
+
+def test_account_balance(account):
+    balance = account.calculate_balance()
+    assert balance == Money.of(151.0)
+
+def test_account_withdrawal(account):
+    success = account.withdraw(Money.of(100.0), AccountId(43))
+
+    assert success
+    assert len(account.activity_window.activities) == 3
+    assert account.calculate_balance() == Money.of(51.0)
+
+def test_account_withdrawal_exceeds_balance(account):
+    success = account.withdraw(Money.of(152.0), AccountId(43))
+
+    assert not success
+    assert len(account.activity_window.activities) == 2
+    assert account.calculate_balance() == Money.of(151.0)
+
+def test_account_deposit(account):
+    success = account.deposit(Money.of(49.0), AccountId(43))
+
+    assert success
+    assert len(account.activity_window.activities) == 3
+    assert account.calculate_balance() == Money.of(200.0)
+```
+
+The `account_test.py` file contains unit tests for the `Account` domain model. It uses the `pytest` framework to define fixtures and test cases.
+The tests cover the following scenarios:
+
+- Calculating the balance of an account.
+- Withdrawing money from an account.
+- Withdrawing money that exceeds the balance of an account.
+- Depositing money into an account.
+
+See the complete implementation of the unit tests [here](https://github.com/gmunumel/clean-buckpal-app/blob/main/tests/application/domain/model/account_test.py).
+
+### Integration Tests
+
+Integration tests verify the interaction between different components of the application, such as services and adapters.
+
+```python
+# no-run
+# tests/application/domain/service/send_money_service_test.py
+import pytest
+# Omitted imports and fixtures for brevity
+
+def test_send_money_service_transaction_succeeds(
+    send_money_service, given_account_with_id
+):
+    service, load_account_port, account_lock, update_account_state_port = (
+        send_money_service
+    )
+
+    source_account_id = AccountId(41)
+    source_account = given_account_with_id(source_account_id)
+
+    target_account_id = AccountId(42)
+    target_account = given_account_with_id(target_account_id)
+
+    source_account.withdraw.return_value = True
+    target_account.deposit.return_value = True
+
+    load_account_port.load_account.side_effect = [source_account, target_account]
+
+    money = Money.of(500)
+    command = SendMoneyCommand(
+        source_account_id=source_account_id,
+        target_account_id=target_account_id,
+        money=money,
+    )
+
+    success = service.send_money(command)
+
+    assert success
+
+    account_lock.lock_account.assert_has_calls(
+        [call(source_account_id), call(target_account_id)]
+    )
+    account_lock.release_account.assert_has_calls(
+        [call(source_account_id), call(target_account_id)]
+    )
+
+    source_account.withdraw.assert_called_once_with(money, target_account_id)
+    target_account.deposit.assert_called_once_with(money, source_account_id)
+
+    update_account_state_port.update_accounts.assert_has_calls(
+        [call([source_account, target_account])]
+    )
+    update_account_state_port.update_activities.assert_has_calls(
+        [call([source_account, target_account])]
+    )
+```
+
+The `send_money_service_test.py` file contains integration tests for the `SendMoneyService`. First, it sets up the necessary fixtures and
+mocks for the accounts involved in the transaction. Then it tests the `send_money` method of the service, ensuring that the transaction
+succeeds when the withdrawal and deposit operations are successful. Some of the assertions include:
+
+- Verifying that the accounts are locked and released correctly.
+- Ensuring that the withdrawal and deposit methods are called with the correct parameters.
+
+### System Tests
+
+The system tests focus on testing the entire application, including the web endpoints and the interaction with the adapters.
+
+```python
+# no-run
+# tests/adapter/inbound/web/send_money_controller_test.py
+import pytest
+# Omitted imports and fixtures for brevity
+
+@pytest.mark.asyncio
+async def test_send_money(client, mock_send_money_use_case, auth_header):
+    with app.container.send_money_controller.override(  # type: ignore
+        SendMoneyController(mock_send_money_use_case)
+    ):
+        response = await client.post(
+            "/send-money",
+            json={"source_account_id": 41, "target_account_id": 42, "amount": 42},
+            headers=auth_header,
+        )
+
+    assert response.status_code == 200
+
+    mock_send_money_use_case.send_money.assert_called_once_with(
+        SendMoneyCommand(
+            source_account_id=AccountId(41),
+            target_account_id=AccountId(42),
+            money=Money.of(42),
+        )
+    )
+
+@pytest.mark.asyncio
+async def test_send_money_failed(client, auth_header):
+    response = await client.post(
+        "/send-money",
+        json={"source_account_id": 41, "target_account_id": 42, "amount": 42},
+        headers=auth_header,
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Account with ID AccountId(41) not found."}
+```
+
+The `send_money_controller_test.py` file contains system tests for the `SendMoneyController`. It uses the `pytest` framework and the `httpx` library to
+send HTTP requests to the web endpoints. The tests cover the following scenarios:
+
+- Sending a valid request to the `/send-money` endpoint and verifying that the request is processed correctly.
+- Sending an invalid request to the `/send-money` endpoint and verifying that the appropriate error response is returned.
+
+## Bounded Context
+
+This example assumes that we are working within a single [Bounded Context](https://martinfowler.com/bliki/BoundedContext.html): **Money Transfer**.
+
+In a real-world application, you would have multiple bounded contexts, each with its own domain models and services. If you need to interact with other
+bounded contexts, you can use domain events or APIs to communicate between them. This allows for a more modular and scalable architecture. To learn more
+about bounded contexts, see my article [Handle Multiple Bounded Contexts](/posts/handle-multiple-bounded-contexts).
+
+# Conclusion
+
+In this article, we have implemented a simple use case for a payment processing system using Clean Architecture principles in Python.
+We have structured the code into layers, separating the core business logic from the infrastructure concerns. This allows for a more maintainable and testable codebase.
+We have also created basic tests to ensure the functionality of the use case. The project structure follows the principles of _DDD_,
+where the core business logic is separated from the infrastructure concerns.
+
+This example serves as a starting point for building more complex applications using Clean Architecture in Python.
+You can extend this example by adding more use cases, implementing error handling, and integrating with real-world infrastructure components such as databases or message queues.
+
+All the code is available on [Clean Buckpal App](https://github.com/gmunumel/clean-buckpal-app).
+
+# References
+
+- [Get Your Hands Dirty with Clean Architecture, 2nd Edition](https://www.packtpub.com/en-ec/product/get-your-hands-dirty-on-clean-architecture-9781805128373?srsltid=AfmBOoracayktJ6j20eNs8nUSH2z3Fh6PdjBf_1ZHSyU_zSlmXvzZ4_t)
+- [Clean Architecture: A Craftsman's Guide to Software Structure and Design](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/)
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture)
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
+- [Python Design Patterns](https://python-patterns.guide/)

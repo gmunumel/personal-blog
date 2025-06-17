@@ -21,7 +21,7 @@ const PostsList = ({ posts }: { posts: PostMeta[] }) => {
   );
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
+    <main className="max-w-6xl mx-auto p-6">
       {/* <h1 className="text-3xl font-bold mb-8 text-center">All Posts</h1> */}
       <div className="flex justify-center mb-8">
         <input

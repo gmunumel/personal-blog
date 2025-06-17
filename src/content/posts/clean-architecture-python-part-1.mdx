@@ -1,0 +1,641 @@
+---
+title: Clean Architecture in Python - Part 1
+tags:
+  - python
+  - clean-architecture
+  - domain-driven-design
+synopsis: >
+  The Clean Architecture pattern in Python promotes separation of concerns, resulting in a more maintainable and testable codebase.
+date: 2024-11-02
+---
+
+# Clean Architecture in Python - Part 1
+
+Clean Architecture is a software design pattern that emphasizes the separation of concerns, making the
+codebase more maintainable, testable, and adaptable to change. It is often referred to as Hexagonal
+Architecture or Ports and Adapters. This architecture allows developers to create systems that are
+independent of frameworks, databases, and external libraries.
+
+Python's dynamic nature and flexibility make it an excellent language for applying Clean Architecture
+principles. However, Clean Architecture is not the first choice for many Python developers, who often
+favor simpler, more pragmatic approaches. Correctly applying Clean Architecture in Python can lead to
+challenges, especially for those new to the concept.
+
+This article introduces the core concepts and principles of Clean Architecture as applied to Python
+development. It explores the motivations for adopting Clean Architecture over traditional layered
+approaches, clarifies related architectural patterns such as Hexagonal and Onion Architecture,
+and demonstrates how to map these ideas to Python’s features and idioms. Through practical examples,
+the article covers organizing code into layers, defining interfaces and entities, implementing
+use cases, and achieving dependency inversion. By the end, readers will understand how Clean
+Architecture promotes maintainability, testability, and flexibility in Python applications,
+setting the stage for hands-on implementation in the next part of the series.
+
+In [part 2](/posts/clean-architecture-python-part-2), a simple Python application will be developed to
+demonstrate a practical example.
+
+## Why not use Layers?
+
+Layers are a common architectural pattern that has been used in software development for decades.
+Especially for web applications, layers are often used to separate concerns such as presentation,
+business logic, and data access.
+
+```mermaid
+// caption: Diagram Layered Architecture
+// css: bg-white p-6
+flowchart TD
+  Web --> Domain --> Persistence
+```
+
+They provide a way to organize code into distinct layers, each with its own responsibility. However,
+there are several downsides to using layers:
+
+- **Promote Database-Driven Design**: Layers often lead to a design that is tightly coupled to
+  the database, making it difficult to change the underlying data store without affecting the
+  entire application.
+- **Prone to Shortcuts**: Developers may take shortcuts by placing business logic in the
+  presentation layer or data access layer, leading to a violation of the separation of concerns.
+- **Hide Use Cases**: Layers can obscure the use cases of the application, making it difficult to
+  understand the system's behavior and requirements.
+- **Difficult Collaboration**: When multiple developers work on different layers, it can lead to
+  conflicts and difficulties in merging changes, especially if the layers are tightly coupled.
+- **Testing Challenges**: Testing individual layers can be difficult when the layers are tightly coupled.
+
+Clean Architecture addresses these issues by promoting a more flexible and modular approach.
+
+But before we dive into Clean Architecture, let's clarify some terminology and concepts that are
+essential for understanding this architectural style.
+
+## Multiple Names for the Same Concept
+
+Clean Architecture is often referred to by different names, including Hexagonal Architecture,
+Ports and Adapters, and Onion Architecture. While these names may suggest different approaches,
+they all share the same core principles of separation of concerns and dependency inversion.
+
+### Clean Architecture
+
+Clean Architecture, as coined by Robert C. Martin (Uncle Bob) in his book
+[Clean Architecture: A Craftsman's Guide to Software Structure and Design](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/),
+emphasizes the separation of concerns
+and the independence of the business logic from external frameworks and technologies. It promotes a
+design that is easy to understand, maintain, and test, while allowing for flexibility in the choice of
+technologies used in the application.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/clean-architecture-python-part-1/clean_architecture.png"
+    alt="Diagram Clean Architecture"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Diagram Clean Architecture
+  </figcaption>
+</figure>
+
+The layers in this architecture are wrapped around each other in concentric circles. The main rule is that
+source code dependencies must point inward, toward the higher-level policies and the **_Dependency Inversion Principle (DIP)_**.
+The innermost circle contains the core business logic (domain services, use cases, and entities), while the outer circles contain interfaces, use cases,
+and external dependencies.
+
+Because the inner circles are independent of the outer circles, the core business logic can be implemented
+without any knowledge of the external systems, allowing us to use **_Domain-Driven Design (DDD)_** approach
+if desired.
+
+### Hexagonal Architecture
+
+Hexagonal Architecture, also known as **_Ports and Adapters_**, was introduced by Alistair Cockburn
+in his [article](https://alistair.cockburn.us/hexagonal-architecture). It emphasizes the
+separation of the application's core logic from its external dependencies, such as databases, user interfaces,
+and external services. The core logic is surrounded by ports (interfaces) that define how the application
+interacts with the outside world, while adapters implement these ports to connect to external systems.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/clean-architecture-python-part-1/hexagonal_architecture.png"
+    alt="Diagram Hexagonal Architecture"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Diagram Hexagonal Architecture
+  </figcaption>
+</figure>
+
+The application code is represented as a hexagon, with the core business logic at the center. Notice that
+the hexagon has no dependencies on the outside world, meaning that the core logic is independent of
+any specific technology or framework, validating the _DIP_.
+
+Outside the hexagon, we have various **adapters** that implement the ports, allowing the application to
+interact with different external systems. There might be a web adapter that interacts with a web browser,
+some adapters interacting with a database, and others that connect to external services or APIs.
+
+To allow communication between the application core and the adapters, we define
+**ports** which are interfaces the core logic expects external systems to implement. You could have two types of ports:
+
+- **Inbound Ports**: These are interfaces that the application core exposes to the outside world.
+  They define how external systems can interact with the core logic.
+- **Outbound Ports**: These are interfaces that the application core uses to interact with external systems.
+
+Port and adapter terminology is often used interchangeably with the term **interface**. To clarify:
+
+- **Ports**: Are the interfaces that define the expected interactions between the application core and external systems.
+- **Adapters**: Are the implementations of these ports, allowing the application to communicate with various external systems.
+
+We could also define _DDD_ bounded contexts within the hexagonal architecture,
+where business logic is implemented in the use case classes and entities. The use case classes are
+**domain services**, each implementing a single use case. If increasing use cases becomes a problem you can create an
+**application service** that coordinates multiple use cases and their interactions.
+
+### Onion Architecture
+
+Onion Architecture, introduced by Jeffrey Palermo in his [blog post](https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/),
+is similar to Clean Architecture but emphasizes the dependency inversion principle by organizing the
+application into concentric circles. The innermost circle contains the domain model (entities), while
+the outer circles contain interfaces, tests, and external dependencies. This structure promotes a clear separation of concerns
+and promotes testability by isolating the core logic from external dependencies.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/clean-architecture-python-part-1/onion_architecture.png"
+    alt="Diagram Onion Architecture"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Diagram Onion Architecture
+  </figcaption>
+</figure>
+
+There is an important distinction: **Application Core**. This service is responsible for
+coordinating the interactions between the Domain Model, Domain Services, and Application Services.
+
+In this article, I primarily focus on Clean Architecture, but the principles discussed can be applied
+to Hexagonal Architecture and Onion Architecture as well. The key takeaway is that all these architectures
+share the same core principles of separation of concerns, dependency inversion, and independence from frameworks.
+
+Now let's explore the core principles of Clean Architecture and how they can be applied in Python.
+
+## Core Principles of Clean Architecture
+
+### Separation of Concerns
+
+Each layer of the architecture should have a distinct responsibility, making the system easier to understand
+and maintain. This separation allows developers to focus on specific aspects of the system without being
+overwhelmed by the entire codebase.
+
+This principle is often implemented by organizing the code into different modules or packages,
+each representing a specific layer of the architecture. For example, you might have separate modules for
+entities, use cases, interface adapters, and frameworks/drivers. This modularity promotes a clear separation
+of concerns and makes it easier to navigate the codebase.
+
+### Dependency Inversion
+
+In a layered architecture (shown <a href="#why-not-use-layers">before</a>), the cross-layer dependencies
+always point down to the next layer. When the [Single Responsibility Principle (SRP)](https://en.wikipedia.org/wiki/Single-responsibility_principle)
+is applied, the upper layers have more reasons to change than the lower layers. Indeed, any change in the
+**Persistence** layer (e.g., changing the database) would require changes in the **Domain** layer, and also in
+**Web** layer. But the **Domain** layer should be independent of the **Persistence** layer because it contains
+the core business logic, should only change when the business requirements change.
+
+How to solve this? By applying the _DIP_, which states that:
+
+> High-level modules should not depend on low-level modules. Both should depend on abstractions.
+
+This means that the higher-level modules (e.g., use cases, entities) should not depend directly on lower-level
+modules (e.g., database, web framework). Instead, both should depend on abstractions (interfaces) that
+define the interactions between them. This allows for a more flexible and modular design, where changes
+in lower-level modules do not affect higher-level modules, and vice versa.
+
+This is a key aspect for all the architectures mentioned above.
+
+Following is an example of the **Domain Layered Architecture** without and with Dependency Inversion:
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/clean-architecture-python-part-1/dependency_inversion.png"
+    alt="Comparison Domain Layered Architecture without and with Dependency Inversion"
+    width="800"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Comparison the Domain Layered Architecture without and with Dependency
+    Inversion
+  </figcaption>
+</figure>
+
+On the left side, there is a service in the domain layer that works with entities and repositories from the persistence layer. The problem
+with this design is that the domain layer is tightly coupled to the persistence layer, forcing it to change when the persistence layer changes.
+The domain services have to deal not only with the domain logic but also with the persistence logic, which violates the
+_SRP_.
+
+To get the result on the right side, first, entities were pulled up into the domain layer as they represent domain objects independent
+of the persistence layer. Then, notice that there is a circular dependency between both layers because the repository from the persistence layer depends on the
+entity, which is now in the domain layer. To solve this, DIP is applied creating an interface for the repository in the domain
+layer (`<<interface>> Repository`), and let the actual repository in the persistence layer implement it (`RepositoryImpl`).
+
+In summary, _DIP_ enables:
+
+> Turn around (invert) the direction of any dependency within your codebase.
+
+But only if you have control over the two ends of the dependency.
+If you have a dependency on a third-party library or framework, you may not be able to apply DIP directly.
+
+### Independence from Frameworks
+
+This principle promotes the idea that the core business logic should be independent of any
+frameworks or libraries, making it easier to switch to a different framework or technology stack
+without affecting the core logic of the application. This independence allows developers to focus on
+the business logic without being constrained by the limitations or requirements of a specific framework.
+
+### Testability
+
+This principle is closely related to the separation of concerns and dependency inversion principles.
+By organizing the code into distinct layers and using interfaces to define interactions between them,
+developers can easily write unit tests for each layer without worrying about the dependencies on other layers.
+It also facilitates integration testing by allowing the use of mock implementations for external dependencies.
+
+## Mapping Clean Architecture to Python
+
+In Python, we can map the principles of Clean Architecture to the language's features and idioms. This includes using:
+
+- **Modules and Packages**: Organize code into modules and packages to reflect the different layers of the architecture.
+
+  ```python
+  # no-run
+  # src/app.py
+  from domain import User
+  from infrastructure import UserRepository
+
+  user_repo = UserRepository()
+  user = User("John Doe", "john@example.com")
+  user_repo.save(user)
+  ```
+
+  In this example, the `domain` package contains the core business logic, while the `infrastructure`
+  package contains the implementation of the repository that interacts with the database. This separation allows for
+  a clear distinction between the core logic and the external dependencies, promoting the principles of Clean Architecture.
+
+- **Interfaces**: Use abstract base classes to define contracts between components, allowing for flexibility and testability.
+
+  ```python
+  # no-run
+  # src/adapter/outbound/persistence/user_repository.py
+  from abc import ABC, abstractmethod
+
+  class UserRepository(ABC):
+      @abstractmethod
+      def save(self, user):
+          pass
+
+      @abstractmethod
+      def find_by_email(self, email):
+          pass
+  ```
+
+  In this example, the `UserRepository` is an abstract base class that defines the contract for a user repository.
+
+- **Data Classes**: Use data classes to represent entities, making it easier to define and manage the core business logic.
+
+  ```python
+  # no-run
+  # src/application/domain/model/user.py
+  from dataclasses import dataclass
+
+  @dataclass
+  class User:
+      name: str
+      email: str
+
+      def __post_init__(self):
+          if not self.email:
+              raise ValueError("Email cannot be empty")
+  ```
+
+  In this example, the `User` class is a data class that represents an user entity. The `__post_init__` method is used to
+  validate the email field, ensuring that it is not empty. This approach allows for a clean and concise definition of entities while
+  still providing validation logic.
+
+- **Dependency Injection**: Use dependency injection to manage dependencies between components, making it easier to swap implementations and write tests.
+
+  ```python
+  # no-run
+  # src/application/domain/service/user_service.py
+  from domain import User, UserRepository
+
+  class UserService:
+      def __init__(self, user_repository: UserRepository):
+          self.user_repository = user_repository
+
+      def register_user(self, name: str, email: str):
+          user = User(name, email)
+          self.user_repository.save(user)
+  ```
+
+  In this example, the `UserService` class depends on the `UserRepository` interface, allowing for different implementations
+  of the repository to be injected at runtime. This promotes loose coupling and makes it easier to test the `UserService` class by providing
+  a mock implementation of the `UserRepository`.
+
+## Entities: The Core Business Logic
+
+Entities are the core business logic of the application. They represent the fundamental concepts and rules of the domain.
+Entities should encapsulate domain rules and remain agnostic of infrastructure or frameworks, and should encapsulate the business rules and logic.
+
+**Core business logic** refers to the central components of an application, including domain services, use cases, and entities,
+which collectively model and execute the essential business rules.
+
+```python
+# no-run
+# src/application/domain/model/user.py
+from dataclasses import dataclass
+from src.application.domain.model.email import Email
+
+@dataclass
+class User:
+    name: str
+    email: Email
+
+    def __post_init__(self):
+        if not self.email:
+            raise ValueError("Email cannot be empty")
+
+    def change_email(self, new_email: str):
+        if not new_email:
+            raise ValueError("New email cannot be empty")
+        self.email = new_email
+```
+
+In this example, the `User` class is an entity that represents a user in the system. It has a name and an email address.
+
+### Value Objects
+
+Alongside entities, we can also define **value objects** that represent immutable values in the domain.
+
+```python
+# no-run
+# src/application/domain/model/email.py
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Email:
+    value: str
+
+    def __post_init__(self):
+        if not self.value or "@" not in self.value:
+            raise ValueError("Invalid email address")
+
+    def __str__(self):
+        return self.value
+```
+
+In this case, the `Email` class is a value object that represents an email address.
+Value objects are typically immutable and should not have any behavior that modifies their state. To indicate to Python that they are immutable,
+we use the `frozen=True` parameter in the `dataclass` decorator.
+
+## Use Cases: Application Business Rules
+
+Use cases represent the application business rules and define how the entities interact with each other to achieve specific goals.
+
+```python
+# no-run
+# src/application/use_cases/register_user.py
+from src.application.domain.model.user import User
+from src.application.domain.model.email import Email
+from src.application.domain.service.user_service import UserService
+
+class RegisterUser:
+    def __init__(self, user_service: UserService):
+        self.user_service = user_service
+
+    def execute(self, name: str, email: str):
+        user = User(name=name, email=Email(email))
+        self.user_service.register_user(user)
+```
+
+Use cases should be designed to be independent of any external dependencies, such as databases or frameworks.
+They should encapsulate the application business rules and logic, making them easy to test and maintain.
+
+## Interface Adapters
+
+Interface adapters are responsible for converting data between the format used by the application and the
+format used by external systems, such as databases, web frameworks, or APIs. They implement the ports defined
+in the core business logic and allow the application to interact with external systems without being tightly coupled to them.
+
+The following is an example of an interface adapter port for `RegisterUser`,
+
+```python
+# no-run
+# src/application/port/outbound/register_user_port.py
+from abc import ABC, abstractmethod
+from src.application.domain.model.user import User
+from src.application.domain.model.user_id import UserId
+from src.application.domain.model.name import Name
+
+class RegisterUserPort(ABC):
+    @abstractmethod
+    def register_user(self, user_id: UserId, user_name: Name) -> User:
+        pass
+```
+
+This abstract base class defines the contract for a user repository, which can be implemented by different adapters to
+interact with various data stores.
+
+## Frameworks and Drivers
+
+Frameworks and drivers are the outermost layer of the architecture and are responsible for interacting with external systems,
+such as web frameworks, databases, or message queues. They provide concrete implementations of the ports defined by interface adapters
+and provide the necessary infrastructure to run the application.
+
+```python
+# no-run
+# src/app.py
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
+from src.application.use_cases.register_user import RegisterUser
+
+app = FastAPI()
+
+@app.post("/register")
+async def register_user(request: Request):
+    data = await request.json()
+    name = data.get("name")
+    email = data.get("email")
+
+    if not name or not email:
+        raise HTTPException(status_code=400, detail="Name and email are required")
+
+    user_service = UserService()
+    use_case = RegisterUser(user_service)
+    use_case.execute(name, email)
+
+    return JSONResponse(content={"message": "User registered successfully"}, status_code=201)
+```
+
+This example shows a simple [FastApi](https://fastapi.tiangolo.com/) web controller that handles user registration.
+It receives user data from the request, validates it, and then calls the `RegisterUser` use case to
+register the user. The `UserService` should be injected into the controller, allowing for different implementations
+of the service to be used, such as a mock service for testing or a real service that interacts with a database.
+
+## Dependency Inversion in Python
+
+Dependency inversion is a key principle of Clean Architecture that allows for flexibility and modularity in the design.
+In Python, we can achieve dependency inversion using `abc.ABC` + `@abstractmethod`, `typing.Protocol`, **Duck Typing**, or
+Dependency Injector Frameworks to define the contracts for different components.
+
+### Using `abc.ABC` + `@abstractmethod`
+
+```python
+# no-run
+from abc import ABC, abstractmethod
+
+class AdminServicePort(ABC):
+    @abstractmethod
+    def register_admin(self, name: str, email: str):
+        pass
+
+    @abstractmethod
+    def get_admin(self, admin_id: str):
+        pass
+```
+
+One key benefit of `ABC` and `@abstractmethod`
+is that it provides a clear contract for the service, making it easier to understand and implement.
+However, it requires the implementing class to inherit from the abstract base class, which can
+make it less flexible if you want to use multiple inheritance or mixins.
+
+### Using `typing.Protocol`
+
+You can also use `typing.Protocol` ([PEP 544](https://docs.python.org/3/library/typing.html#typing.Protocol))
+to define a protocol that specifies the expected methods and properties of an object.
+
+```python
+# no-run
+from typing import Protocol
+
+class AdminServicePort(Protocol):
+    def register_admin(self, name: str, email: str):
+        pass
+
+    def get_admin(self, admin_id: str):
+        pass
+```
+
+An advantage of using `Protocol` is that it allows for more flexible and dynamic code,
+as it does not require the implementing class to inherit from a specific base class.
+However, it does not provide the same level of type checking as `ABC` and `@abstractmethod`,
+which can lead to runtime errors if the implementing class does not implement the expected methods.
+
+### Using _Duck Typing_
+
+Duck typing is a concept in Python that allows for more flexible and dynamic code.
+Instead of relying on explicit interfaces or protocols, duck typing focuses on whether an
+object behaves like the expected type.
+
+> If an object implements the required methods and behaves like the expected type,
+> it can be used interchangeably—even without explicit inheritance or interface implementation.
+
+In the context of Clean Architecture, this means that
+as long as an object implements the required methods and properties,
+it can be used interchangeably with other objects of the same "type".
+
+```python
+# no-run
+class AdminService:
+    def __init__(self, port):
+        self.port = port
+
+    def do_something(self):
+        self.port.register_admin("Alice", "alice@example.com")
+```
+
+Just require that the injected object has the needed methods. However, this approach can lead to
+runtime errors if the object does not implement the expected methods.
+
+### Dependency Injection Frameworks
+
+Dependency injection frameworks, such as [Dependency Injector](https://python-dependency-injector.ets-labs.org/),
+allow for more advanced dependency management and inversion in Python applications.
+
+```python
+# no-run
+from dependency_injector import containers, providers
+
+class AdminServicePort(Protocol):
+    def register_admin(self, name: str, email: str):
+        pass
+
+    def get_admin(self, admin_id: str):
+        pass
+
+class AdminService:
+    def __init__(self, port: AdminServicePort):
+        self.port = port
+
+    def register_admin(self, name: str, email: str):
+        self.port.register_admin(name, email)
+```
+
+An advantage of using a dependency injection framework is that it provides a
+more structured and organized way to manage dependencies,
+allowing for better separation of concerns and easier testing. However, it can add complexity to the codebase
+and may require additional configuration and setup.
+
+## Common Pitfalls and Tips
+
+When applying Clean Architecture in Python, there are some common pitfalls to avoid:
+
+- **Overcomplicating the Design**: Clean Architecture can lead to over-engineering if not applied judiciously.
+  Start with a simple design and gradually refactor as needed.
+- **Ignoring Python Idioms**: Python has its own idioms and conventions that may not align with the strict
+  principles of Clean Architecture. Embrace Python's dynamic nature and flexibility while adhering to the core principles.
+- **Neglecting Testing**: While Clean Architecture promotes testability, it requires discipline to write tests for each layer.
+  Ensure that you have a solid testing strategy in place to validate the behavior of your application.
+- **Tight Coupling**: Avoid tight coupling between layers by using interfaces and dependency injection.
+- **Ignoring Performance**: While Clean Architecture promotes maintainability and testability, it can introduce
+  performance overhead due to the additional layers and abstractions. Be mindful of performance implications
+  and optimize where necessary, especially in performance-critical parts of the application.
+- **Neglecting Domain-Driven Design**: Clean Architecture is often used in conjunction with DDD. If your application
+  has complex business logic, consider applying DDD principles to model the domain effectively.
+  This includes defining bounded contexts, aggregates, and domain events to capture the business rules and interactions.
+- **Not Considering Scalability**: Clean Architecture is designed to be scalable, but it's essential to consider
+  scalability from the beginning. Design the architecture to accommodate future growth and changes in requirements.
+  This includes considering how to handle large volumes of data, high concurrency, and distributed systems.
+- **Continuous Refactoring**: Clean Architecture is not a one-time effort. It requires continuous iteration and improvement
+  as the application evolves. Regularly review and refactor the architecture to ensure that it remains aligned with
+  the principles of Clean Architecture and meets the changing needs of the application.
+
+Tips for successfully applying Clean Architecture in Python:
+
+- **Start Small**: Begin with a small project or a specific module to apply Clean Architecture principles.
+  Gradually expand the architecture as you gain experience and confidence.
+- **Use Python's Features**: Leverage Python's dynamic nature, duck typing, and powerful libraries to implement
+  Clean Architecture effectively. Use features like decorators, context managers, and data classes to simplify the design.
+- **Use Design Patterns**: Apply design patterns where appropriate to solve common problems and improve the structure of the code.
+- **Stay Pragmatic**: While Clean Architecture provides a solid foundation, it's essential to remain pragmatic and
+  adapt the principles to fit the specific needs of your application. Avoid dogmatic adherence to the principles at the
+  expense of practicality and simplicity.
+
+# Conclusion
+
+Clean Architecture is a powerful architectural pattern that promotes separation of concerns, dependency inversion,
+and independence from frameworks. By applying these principles in Python, developers can create maintainable,
+testable, and adaptable systems that are easy to understand and evolve over time.
+
+In this article, we explored the key concepts of Clean Architecture in Python, including its core principles, how to map it
+to Python's features, and practical examples of how to implement it in a Python application. It is the first part
+of a series on Clean Architecture in Python. In the
+[next part](/posts/clean-architecture-python-part-2), we will develop a simple Python application to
+demonstrate a practical example of Clean Architecture.
+
+# References
+
+- [Clean Architecture: A Craftsman's Guide to Software Structure and Design](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/)
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture)
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
+- [Get Your Hands Dirty with Clean Architecture, 2nd Edition](https://www.packtpub.com/en-ec/product/get-your-hands-dirty-on-clean-architecture-9781805128373?srsltid=AfmBOoracayktJ6j20eNs8nUSH2z3Fh6PdjBf_1ZHSyU_zSlmXvzZ4_t)
+- [Python Design Patterns](https://python-patterns.guide/)
+- [Clean Code: A Handbook of Agile Software Craftsmanship](https://www.oreilly.com/library/view/clean-code-a/9780136083238/)
+- [Domain-Driven Design Distilled](https://www.oreilly.com/library/view/domain-driven-design-distilled/9780134434964/)
+- [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
+- [Head First Design Patterns, 2nd Edition](https://www.oreilly.com/library/view/head-first-design/9781492077992/)
+- [Architecture Patterns with Python](https://www.oreilly.com/library/view/architecture-patterns-with/9781492052197/)

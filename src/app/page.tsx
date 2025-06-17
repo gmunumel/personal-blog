@@ -14,8 +14,8 @@ const Home = async () => {
   const others = sorted.slice(1);
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <section className="mb-12 text-center rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-8">
+    <main className="max-w-6xl mx-auto p-6">
+      <section className="max-w-3xl mx-auto mb-12 text-center rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 p-8">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-blue-800 dark:text-blue-200 mb-3 tracking-tight drop-shadow">
           StackEdge:{" "}
           <span className="text-blue-500 dark:text-blue-400">

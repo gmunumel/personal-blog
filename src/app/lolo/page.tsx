@@ -9,11 +9,12 @@ const LoloPage = () => {
       <section className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-800">
         <div className="flex flex-col items-center mb-6">
           <Image
-            src="/lolo_and_me.jpg"
+            src="/lolo_and_me_resize.jpg"
             alt="Photo of Lolo the chow chow"
-            width={512}
-            height={512}
-            className="w-full h-auto rounded-xl shadow-lg border-4 border-blue-200 dark:border-blue-900 object-cover mb-4"
+            width={320}
+            height={420}
+            className="rounded-xl shadow-lg border-4 border-blue-200 dark:border-blue-900 mb-4"
+            style={{ width: "320px", height: "420px" }}
             priority
           />
           <h1 className="text-4xl font-extrabold mb-1 text-blue-800 dark:text-blue-200 text-center">

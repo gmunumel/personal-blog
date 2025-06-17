@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Editor from "react-simple-code-editor";
+import CopyButton from "@/app/components/CopyButton";
 import Prism from "prismjs";
 import "prismjs/components/prism-python";
 // import "prismjs/themes/prism-tomorrow.css";
@@ -53,7 +54,8 @@ const PythonRunner = ({
   }, [loading, noRun]);
 
   return (
-    <div className="my-4 p-4 rounded bg-gray-50 dark:bg-gray-900">
+    <div className="my-4 p-4 rounded bg-gray-50 dark:bg-gray-900 relative">
+      <CopyButton getText={() => currentCode} />
       <Editor
         value={currentCode}
         onValueChange={setCurrentCode}

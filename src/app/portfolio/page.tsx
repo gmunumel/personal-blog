@@ -1,6 +1,6 @@
 const PortfolioPage = () => {
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Portfolio</h1>
       <p className="mb-6 text-lg">
         Welcome to my portfolio! Here you can find a collection of my projects

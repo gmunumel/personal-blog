@@ -28,12 +28,12 @@ If it does, it returns the existing instance; otherwise, it creates a new one.
 
 ```python
 class Singleton:
-  _instance = None
+    _instance = None
 
-  def __new__(cls, *args, **kwargs):
-    if not cls._instance:
-      cls._instance = super(Singleton, cls).__new__(cls)
-    return cls._instance
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Singleton, cls).__new__(cls)
+        return cls._instance
 
 
 singleton1 = Singleton()
@@ -61,19 +61,19 @@ safety and lazy initialization.
 import threading
 
 class SingletonMeta(type):
-  _instances = {}
-  _lock = threading.Lock()
+    _instances = {}
+    _lock = threading.Lock()
 
-  def __call__(cls, *args, **kwargs):
-    if cls not in cls._instances:
-      with cls._lock:
+    def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-          cls._instances[cls] = super().__call__(*args, **kwargs)
-    return cls._instances[cls]
+            with cls._lock:
+                if cls not in cls._instances:
+                    cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 class Singleton(metaclass=SingletonMeta):
-  def __init__(self):
-    print("Initializing singleton instance")
+    def __init__(self):
+        print("Initializing singleton instance")
 
 singleton1 = Singleton()
 singleton2 = Singleton()
@@ -93,7 +93,7 @@ that when a module is imported, it is only loaded once, and subsequent imports r
 This takes advantage of Python's module system and global definition to create a singleton-like behavior.
 See question ["How do I share global variables across modules?"](https://docs.python.org/3/faq/programming.html#how-do-i-share-global-variables-across-modules).
 
-```python 
+```python
 # no-run
 # singleton.py
 class Singleton:
@@ -125,7 +125,7 @@ and an instance of it is created as `single_instance`. When this module is impor
 `main.py`, the same instance is used, ensuring that there is only one instance of
 the `Singleton` class throughout the application.
 
-## Conclusion
+# Conclusion
 
 The Singleton Design Pattern is a useful design pattern in Python when you need to ensure that
 only one instance of a class exists in your application. While the first implementation
@@ -135,7 +135,7 @@ and lazy initialization. However, Python's module system provides a more Pythoni
 singleton behavior, leveraging the fact that modules are, by nature, singletons. This approach is
 cleaner and more idiomatic, making it the preferred way to implement singletons in Python.
 
-## References
+# References
 
 - [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
 - [Python Design Patterns](https://python-patterns.guide/)

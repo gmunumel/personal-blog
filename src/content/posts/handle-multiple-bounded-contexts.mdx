@@ -1,0 +1,781 @@
+---
+title: Handle Multiple Bounded Contexts
+tags:
+  - python
+  - domain-driven-design
+  - domain events
+synopsis: >
+  Handling multiple bounded contexts in Python can be achieved using domain events to communicate between contexts, ensuring loose coupling and clear boundaries.
+date: 2024-11-27
+---
+
+# Handle Multiple Bounded Contexts
+
+In **_Domain-Driven Design (DDD)_**, a **bounded context** defines the boundaries within which a particular model is defined and applicable.
+When dealing with multiple bounded contexts, it's crucial to maintain clear boundaries and ensure that each context can progress independently.
+One way to achieve this is by using **domain events**, allowing different bounded contexts to communicate without tight coupling. But is not the only way to do it.
+
+In this article, we will explore how to handle multiple bounded contexts in Python using domain events, along with some alternative approaches.
+
+## What is a Bounded Context?
+
+A **bounded context** is a conceptual boundary within which a specific domain model is defined and applicable.
+It helps to isolate different parts of a system, allowing each part to advance individually without affecting others.
+Bounded contexts are essential for managing complexity and ensuring that different parts of the system can communicate effectively.
+
+According to Eric Evans, the author of _Domain-Driven Design: Tackling Complexity in the Heart of Software_:
+
+> A bounded context is a boundary within which a particular model is defined and applicable.
+> It provides a clear separation between different parts of the system, allowing each part to evolve independently.
+
+A bounded context can be thought of as a specific area of the system where a particular model is valid and applicable.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/bounded_contexts.png"
+    alt="Two Contexts with a common Entity"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Two Contexts with a common Entity
+  </figcaption>
+</figure>
+
+The figure above illustrates two contexts, each with its own model.
+However, they share a common entity, which can lead to challenges in maintaining consistency
+and communication between the contexts. For _Finance Context_, the `Account` entity might represent a bank account with specific attributes and behaviors,
+while for _Human Resources Context_, the same `Account` entity might represent an employee account with different
+attributes and behaviors.
+
+If we scale this up to a larger system, we might have multiple bounded contexts,
+each with its own model, but sharing common entities or concepts. According
+to [Marting Fowler](https://martinfowler.com/bliki/BoundedContext.html): try to do a total unification of these models will not be feasible or cost-effective, which could lead to a monolithic architecture.
+
+So, how can we handle multiple bounded contexts in Python while ensuring clear
+boundaries and effective communication?
+
+The possible solutions include:
+
+- **Embrace Independence**: Allow each bounded context to evolve independently, even if it means duplicating some entities or concepts.
+- **Context Map**: Introduce a translation layer to protect your model from being corrupted.
+- **Shared Kernel**: Defining a shared kernel that contains common entities and concepts used by multiple bounded contexts.
+- **Separate Context**: Implementing a separate context for shared entities when they do not belong to any specific bounded context.
+- **Anti Corruption Layer (ACL)**: Using an anti-corruption layer to translate between different bounded contexts, and protect your model from being corrupted by external changes.
+- **Domain Events**: Using domain events to communicate between bounded contexts, allowing them to remain loosely coupled.
+
+## Embrace Independence
+
+One of the simplest ways to handle multiple bounded contexts is to embrace independence.
+This means allowing each bounded context to progress individually, even if it means duplicating some entities or concepts.
+
+Usually the issue
+arises because both teams use the same _term_ but mean different things in their respective contexts. Refine the **_Ubiquitous Language_**
+to avoid this issue.
+
+This approach can lead to a more modular and flexible architecture, as each bounded context can be developed and deployed independently.
+However, it can also lead to duplication of code and data, which can increase complexity and maintenance costs.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/embrace_independence.png"
+    alt="Two Contexts with independent Entities"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Two Contexts with independent Entities
+  </figcaption>
+</figure>
+
+In the example of the _Finance Context_ and _Human Resources Context_, we could have two separate `Account` entities, each with its own attributes and behaviors.
+In Python the name of the entity can be the same, but they will be defined in different modules or classes.
+
+```python
+# src/finance/domain/model/account.py
+class Account:
+    def __init__(self, account_id, balance):
+        self.account_id = account_id
+        self.balance = balance
+
+    def deposit(self, amount):
+        self.balance += amount
+
+    def withdraw(self, amount):
+        if amount <= self.balance:
+            self.balance -= amount
+        else:
+            print("Insufficient funds")
+
+    def print_balance(self):
+        print(f"Account {self.account_id} has a balance of {self.balance}")
+
+finance_account = Account(account_id="12345", balance=1000)
+finance_account.deposit(500)
+finance_account.print_balance()
+finance_account.withdraw(200)
+finance_account.print_balance()
+finance_account.withdraw(1500)
+```
+
+The `Account` class in the _Finance Context_ with methods to deposit, withdraw, and print the balance.
+This class is independent of the _Human Resources Context_, allowing it to evolve without affecting the other context.
+
+```python
+# src/hr/domain/model/account.py
+class Account:
+    def __init__(self, employee_id, salary):
+        self.employee_id = employee_id
+        self.salary = salary
+
+    def pay_salary(self):
+        print(f"Paying salary of {self.salary} to employee {self.employee_id}")
+
+hr_account = Account(employee_id="67890", salary=3000)
+hr_account.pay_salary()
+```
+
+The class `Account` in the _Human Resources Context_ has its own attributes and methods, allowing it to manage employee accounts independently.
+
+If for some reason you need to use both in the same file you can use an alias to differentiate them:
+
+```python
+# no-run
+# src/main.py
+from src.finance.domain.model.account import Account as FinanceAccount
+from src.hr.domain.model.account import Account as HRAccount
+
+finance_account = FinanceAccount(account_id="12345", balance=1000)
+hr_account = HRAccount(employee_id="67890", salary=3000)
+```
+
+The implementation above imports the `Account` class from both contexts and uses aliases to differentiate them.
+This approach allows you to maintain clear boundaries between the contexts while still being able to use the same name for the entity.
+
+Both models are _locally related_ but serve different purposes in their respective contexts.
+
+## Context Map
+
+A **context map** is a way to define the relationships between different bounded contexts and how they communicate with each other.
+It provides a clear separation between different parts of the system, allowing each part to develop individualy while still being able to communicate effectively.
+Result would be a coherent dialect of the **_Ubiquitous Language_** across the system.
+
+Steps to implement a context map:
+
+1. **Identify Bounded Contexts**: Identify the different bounded contexts in your system and their boundaries.
+2. **Define Relationships**: Define the relationships between the bounded contexts, including how they communicate and share data.
+3. **Implement Context Map**: Implement a context map that defines the relationships and communication patterns between the bounded contexts.
+
+A context map can be implemented in Python by defining a separate module or package that contains the definitions of the relationships between different bounded contexts.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/context_map.png"
+    alt="Context Map"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Context Map
+  </figcaption>
+</figure>
+
+The figure above illustrates a context map that defines the relationships between the _Finance Context_ and _Human Resources Context_.
+
+```python
+# no-run
+# src/common/account_translator.py
+from src.finance.domain.model.account import Account as FinanceAccount
+from src.hr.domain.model.account import Account as HrAccount
+
+class AccountTranslator:
+    @staticmethod
+    def finance_to_hr(finance_account: FinanceAccount) -> HrAccount:
+        return HrAccount(
+            employee_id=finance_account.account_id,
+            salary=finance_account.balance
+        )
+
+    @staticmethod
+    def hr_to_finance(hr_account: HrAccount) -> FinanceAccount:
+        return FinanceAccount(
+            account_id=hr_account.employee_id,
+            balance=hr_account.salary
+        )
+
+finance_acc = FinanceAccount(account_id="F123", balance=1000)
+hr_acc = AccountTranslator.finance_to_hr(finance_acc)
+print(f"FinanceAccount -> HrAccount: {hr_acc}")
+
+hr_acc2 = HrAccount(employee_id="E456", salary=5000)
+finance_acc2 = AccountTranslator.hr_to_finance(hr_acc2)
+print(f"HrAccount -> FinanceAccount: {finance_acc2}")
+```
+
+The `AccountTranslator` class that provides methods to translate between the `FinanceAccount` and `HrAccount` entities.
+This allows the two bounded contexts to communicate without tight coupling, ensuring that each context can advance independently. _This is the object that both
+teams have to work together to maintain._
+
+A context map is a simplified version of <a href="#anti-corruption-layer-acl">Anti Corruption Layer (ACL)</a>.
+
+## Shared Kernel
+
+A **shared kernel** is a way to define a common set of entities and concepts that are used by multiple bounded contexts. Teams agree upfront on this process,
+allowing them to share a common understanding of the entities and concepts used in the system. Teams must share _only a small, stable part_ of the
+model, which is the shared kernel.
+
+The following figure illustrates a shared kernel that contains common entities and concepts used by both the _Finance Context_ and _Human Resources Context_,
+in this case the `Record` entity in _Monitor Context_.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/shared_kernel.png"
+    alt="Shared Kernel"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Shared Kernel
+  </figcaption>
+</figure>
+
+Following the example of the _Finance Context_ and _Human Resources Context_, we can define a `Record` entity in a shared kernel that both contexts can use.
+
+```python
+# no-run
+# src/shared/kernel/record.py
+class Record:
+    def __init__(self, record_id, description):
+        self.record_id = record_id
+        self.description = description
+
+    def display(self):
+        print(f"Record ID: {self.record_id}, Description: {self.description}")
+
+record = Record(record_id="R001", description="Shared Record")
+record.display()
+```
+
+The code above defines a `Record` class in the shared kernel that can be used by both the _Finance Context_ and _Human Resources Context_.
+This allows both contexts to share a common understanding of the `Record` entity.
+
+A shared kernel is often the **_Core Domain_** of the system, where both teams have to work together to maintain it.
+
+## Separate Context
+
+Another approach to handling multiple bounded contexts is to implement a separate context for shared entities. In this case, the shared
+entity does not belong to any specific bounded context, but rather exists in its own context. We should promote it to its own bounded
+context and treat others as consumers of its API or events.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/separate_context.png"
+    alt="Separate Context"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Separate Context
+  </figcaption>
+</figure>
+
+In the example of the _Finance Context_ and _Human Resources Context_, we could have a separate context for the `Account` entity that both contexts can use _Account Management Context_.
+They communicate with this context through its API or events, allowing them to remain loosely coupled.
+
+```python
+# no-run
+# src/domain/services/account_management.py
+class AccountManagement:
+    def __init__(self):
+        self.accounts = {}
+
+    def create_account(self, account_id, balance, salary):
+        self.accounts[account_id] = {"balance": balance, "salary": salary}
+        print(f"Account {account_id} created with balance {balance} and salary {salary}")
+
+    def remove_account(self, account_id):
+        if account_id in self.accounts:
+            del self.accounts[account_id]
+            print(f"Account {account_id} removed")
+        else:
+            print(f"Account {account_id} not found")
+```
+
+The `AccountManagement` class provides methods to create, get balance, and remove accounts.
+This allows both the _Finance Context_ and _Human Resources Context_ to use the same `AccountManagement` context without tight coupling.
+
+## Anti Corruption Layer (ACL)
+
+An **Anti Corruption layer (ACL)** is a pattern used to protect your model from being corrupted by external changes.
+It acts as a translation layer between different bounded contexts, allowing them to communicate without tight coupling.
+This pattern is particularly useful when dealing with legacy systems or external APIs that do not align with your domain model.
+
+The ACL consist of:
+
+- **Translators**: Classes or functions that convert data between different models or formats.
+- **Adapters**: Classes or functions that adapt the interface of one bounded context to another, allowing them to communicate effectively.
+- **Interfaces**: Define clear interfaces for communication between bounded contexts.
+- **Services**: Provide a way to encapsulate the logic for interacting with other bounded contexts.
+
+The following figure illustrates an ACL that translates between the _Finance Context_ and _Human Resources Context_.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/anti_corruption_layer.png"
+    alt="Anti Corruption Layer"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Anti Corruption Layer. the _U_ stands for Upstream, <br />
+    _D_ stands for Downstream, _OHS_ stands for Open Host Service, <br />
+    and _PL_ stands for Published Language.
+  </figcaption>
+</figure>
+
+In the above figure, the ACL acts as a protection layer between the _Finance Context_ and _Account Management Context_,
+and _Human Resources Context_ and _Account Management Context_.
+
+But what is a Open Host Service and Published Language?
+
+### Open Host Service (OHS)
+
+An **Open Host Service (OHS)** is a service that provides a well-defined interface for other bounded contexts to interact with it.
+It allows other contexts to access its functionality without needing to understand its internal workings. Enhance and expand
+the interface to handle new integration requirements.
+
+### Published Language (PL)
+
+A **Published Language (PL)** is a common language or format used by multiple bounded contexts to communicate with each other.
+Use a well-defined shared language that can express the necessary domain information as a common medium of communication.
+Published Language is often combined with Open Host Service to provide a clear and consistent way for different contexts to interact.
+
+Below is a zoom in figure of the ACL that illustrates the different components.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/anti_corruption_layer_2.png"
+    alt="Zoom in Anti Corruption Layer for Human Resources Context and Account Management Context"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Zoom in Anti Corruption Layer for _Human Resources Context_ <br />
+    and _Account Management Context_.
+  </figcaption>
+</figure>
+
+There is a `HTTPClient (Facade)` that acts as a facade for the _Account Management Context_. A `AccountAdapter` that provides
+an interface for the _Human Resources Context_ to interact with the _Account Management Context_, `AccountTranslator` that provides
+methods to translate between the `HrAccount` and `AccountManagementAccount` entities, and an `AccountService` that acts as an anti-corruption
+layer for the _Human Resources Context_ and _Account Management Context_.
+
+We created a `acl` package within the _Human Resources Context_ to contain the ACL components. The following components are
+included in the ACL: **AccountAdapter**, **AccountTranslator**, and **HTTPClient (Facade)**.
+
+We take advantage of [Design Patterns](https://en.wikipedia.org/wiki/Design_Patterns) such as **Adapter**,
+**Translator**, and **Facade** to implement the ACL. Allowing us to
+maintain clear boundaries between the _Human Resources Context_ and _Account Management Context_,
+while still enables effective communication.
+
+### Adapter
+
+The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
+
+```python
+# no-run
+# src/hr/acl/account_adapter.py
+from src.hr.acl.account_service import AccountService
+
+class AccountAdapter:
+    def __init__(self, account_management_service):
+        self.account_management_service = account_management_service
+
+    def create_account(self, hr_account):
+        self.account_management_service.create_hr_account(hr_account)
+
+    def remove_account(self, hr_account):
+        self.account_management_service.remove_hr_account(hr_account)
+```
+
+The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
+This allows the _Human Resources Context_ to create and remove accounts in the _Account Management Context_ without needing to understand its internal workings.
+
+### Account Translator
+
+The implementation of the `AccountTranslator` class is straightforward. It provides two static methods for
+translating between the `HrAccount` and `AccountManagementAccount` entities.
+
+```python
+# no-run
+# src/hr/acl/account_translator.py
+from src.hr.domain.model.account import Account as HrAccount
+from src.account_management.domain.model.account import Account as AccountManagementAccount
+
+class AccountTranslator:
+    @staticmethod
+    def hr_to_account_management(hr_account: HrAccount) -> AccountManagementAccount:
+        return AccountManagementAccount(
+            account_id=hr_account.employee_id,
+            balance=hr_account.salary
+        )
+
+    @staticmethod
+    def account_management_to_hr(account_management_account: AccountManagementAccount) -> HrAccount:
+        return HrAccount(
+            employee_id=account_management_account.account_id,
+            salary=account_management_account.balance
+        )
+```
+
+The `AccountTranslator` class provides methods to translate between the `HrAccount` and `AccountManagementAccount` entities.
+This allows the _Human Resources Context_ to communicate with the _Account Management Context_ using a common
+language (PL), ensuring that both contexts can evolve independently without affecting each other.
+
+### HTTP Client (Facade)
+
+Our Open Host Service is a HTTP client to interact with the _Account Management Context_.
+
+```python
+# no-run
+# src/hr/acl/http_client.py
+import requests
+
+class HttpClient:
+    def __init__(self, base_url):
+        self.base_url = base_url
+
+    def create_account(self, account_id, balance, salary):
+        response = requests.post(
+            f"{self.base_url}/accounts",
+            json={"account_id": account_id, "balance": balance, "salary": salary}
+        )
+        return response.json()
+
+    def remove_account(self, account_id):
+        response = requests.delete(f"{self.base_url}/accounts/{account_id}")
+        return response.status_code
+```
+
+The `HttpClient` class provides an HTTP client to interact with the _Account Management Context_.
+This allows the _Human Resources Context_ to create and remove accounts in the _Account Management Context_ using HTTP requests, ensuring that both contexts can communicate effectively without tight coupling.
+
+### Account Service
+
+Finally, we can implement the `AccountService` class, which acts as an anti-corruption layer for
+the _Human Resources Context_ and _Account Management Context_. This class is
+within the _Human Resources Context_ and not in `acl` package.
+
+```python
+# no-run
+# src/hr/domain/service/account_service.py
+from src.hr.domain.model.account import Account as HrAccount
+from src.account_management.domain.model.account import Account as AccountManagementAccount
+from src.hr.acl.account_translator import AccountTranslator
+
+class AccountService:
+    def __init__(self, account_management_service):
+        self.account_management_service = account_management_service
+
+    def maintain_account(self, hr_account: HrAccount):
+        account_management_account = AccountTranslator.hr_to_account_management(hr_account)
+        self.account_management_service.create_account(
+            account_id=account_management_account.account_id,
+            balance=account_management_account.balance,
+            salary=hr_account.salary
+        )
+```
+
+The `AccountService` class provides a method to maintain accounts in the _Account Management Context_.
+It uses the `AccountTranslator` to translate between the `HrAccount` and `AccountManagementAccount` entities,
+ensuring that both contexts can communicate effectively without tight coupling.
+
+Following is the sequence diagram that illustrates the interaction between the _Human Resources Context_ and _Account Management Context_ using the ACL.
+
+```mermaid
+// title: Sequence Diagram - Anti Corruption Layer (ACL)
+// caption: Sequence of creating an account from Human Resources Context to Account Management Context via ACL.
+// css: w-full h-full bg-white py-3
+sequenceDiagram
+    participant HR as Human Resources<br/>Context
+    participant Service as AccountService
+    participant Adapter as AccountAdapter
+    participant Translator as AccountTranslator
+    participant Http as HttpClient (Facade)
+    participant AMC as Account Management<br/>Context
+
+    HR->>Service: maintain_account(hr_account)
+    Service->>Adapter: create_account(hr_account)
+    Adapter->>Translator: hr_to_account_management(hr_account)
+    Translator-->>Adapter: account_management_account
+    Adapter->>Http: create_account(account_id, balance, salary)
+    Http->>AMC: POST /accounts
+    AMC-->>Http: Account created
+    Http-->>Adapter: Response
+    Adapter-->>Service: Result
+    Service-->>HR: Done
+```
+
+The sequence diagram illustrates the interaction between the _Human Resources Context_ and _Account Management Context_ using the ACL.
+The `AccountService` calls the `AccountAdapter`, which uses the `AccountTranslator` to translate the `HrAccount` to `AccountManagementAccount`.
+The `AccountAdapter` then uses the `HttpClient` to create the account in the _Account Management Context_.
+This allows both contexts to communicate effectively without tight coupling, ensuring that each context can evolve independently.
+
+## Domain Events
+
+Domain events are a powerful way to handle multiple bounded contexts in Python.
+They allow different bounded contexts to communicate without tight coupling, ensuring that each context can evolve independently.
+Domain events are used to notify other bounded contexts about changes in the system, allowing them to react to those changes
+without needing to know the details of the other context.
+
+There are common phrases that help us identify when to use domain events:
+
+- "When..."
+- "If something happens..."
+- "Inform me when..." or "Notify me when..."
+
+But first we need to define what an Aggregate is.
+
+### Aggregate
+
+An **Aggregate** is a cluster of domain objects that can be treated as a single unit.
+When an aggregate changes its state, it can publish a domain event to notify other bounded contexts about the change.
+Aggregates are idempotent, meaning that they can be applied multiple times without changing the outcome. The entry point
+to an aggregate is defined as **Aggregate Root**. But must not communicate with other aggregates directly other than the
+Aggregate Root. This ensures that the aggregate is treated as a single unit and that its state is consistent.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/aggregate.png"
+    alt="Aggregate - A cluster of domain objects that can be treated as a single unit."
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Aggregate - A cluster of domain objects that can be treated as a single
+    unit.
+  </figcaption>
+</figure>
+
+The figure above illustrates an aggregate root named `Keyboard`,
+where `KeyCap`, `Switch` and `Position` are domain objects that can be treated as a single unit. There is not allow communication
+between an `User` and `Switch` directly, but only through the `Keyboard` aggregate root.
+
+Domain events are usually defined over aggregates because they represent a significant change in the state of the system.
+When an aggregate changes its state, it can publish a domain event to notify other bounded contexts about the change.
+
+Steps to implement domain events using aggregates:
+
+1. Cluster the **Entities** and **Value Objects** into **Aggregates** and define boundaries around them.
+2. Choose one **Entity** to be the **Aggregate Root**.
+3. Control all access to the objects inside the boundary through the root.
+4. Allow external objects to hold references to the root only.
+
+The following figure illustrates how domain events can be used to handle a single aggregate.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/handle-multiple-bounded-contexts/domain_events.png"
+    alt="Domain Events"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray=-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Domain Events
+  </figcaption>
+</figure>
+
+Coming back to the example of the _Finance Context_ and _Human Resources Context_, every time a new account is created in
+_Human Resources Context_, a domain event is published to notify the _Finance Context_ about the change. We will need the following
+changes:
+
+- Define a `Dispatcher` that will be responsible for dispatching domain events to the appropriate handlers.
+- Define an `AccountCreated` domain event that contains the necessary information about the account.
+- Update `HrAccount` class to publish the `AccountCreated` domain event when a new account is created.
+- Update `FinanceAccount` class to handle the `AccountCreated` domain event and update its state accordingly.
+
+```python
+# no-run
+# src/domain_event/dispatcher.py
+class DomainEventDispatcher:
+    def __init__(self):
+        self._subscribers = {}
+
+    def subscribe(self, event_type, handler):
+        if event_type not in self._subscribers:
+            self._subscribers[event_type] = []
+        self._subscribers[event_type].append(handler)
+
+    def publish(self, event):
+        event_type = type(event)
+        handlers = self._subscribers.get(event_type, [])
+        for handler in handlers:
+            handler(event)
+
+# Singleton instance for global use
+dispatcher = DomainEventDispatcher()
+```
+
+The `DomainEventDispatcher` class is responsible for dispatching domain events to the appropriate handlers.
+There is a singleton instance of the dispatcher that can be used globally.
+
+```python
+# no-run
+# src/domain_event/account_created.py
+class AccountCreated:
+    def __init__(self, account_id, balance, salary):
+        self.account_id = account_id
+        self.balance = balance
+        self.salary = salary
+```
+
+The `AccountCreated` class represents a domain event that contains the necessary information about the account.
+
+```python
+# no-run
+# src/hr/domain/model/account.py
+from src.domain_event.dispatcher import dispatcher
+from src.domain_event.account_created import AccountCreated
+
+class Account:
+    def __init__(self, employee_id, salary):
+        self.employee_id = employee_id
+        self.salary = salary
+
+    # Other methods...
+
+    def publish_account_created_event(self):
+        event = AccountCreated(self.employee_id, self.salary)
+        dispatcher.publish(event)
+```
+
+The `Account` class in the _Human Resources Context_ is updated to publish the `AccountCreated` domain event when a new account is created.
+
+```python
+# no-run
+# src/finance/domain/model/account.py
+from src.domain_event.account_created import AccountCreated
+from src.domain_event.dispatcher import dispatcher
+
+class Account:
+    def __init__(self, account_id, balance):
+        self.account_id = account_id
+        self.balance = balance
+
+    # Other methods...
+
+def handle_account_created_event(self, event: AccountCreated):
+    if event.account_id == self.account_id:
+        self.balance += event.salary
+        print(f"Account {self.account_id} updated with salary {event.salary}. New balance: {self.balance}")
+
+dispatcher.subscribe(AccountCreated, handle_account_created_event)
+```
+
+There is a new method `handle_account_created_event` that handles the `AccountCreated` domain event and updates
+the state of the `Account` in the _Finance Context_.
+
+This is my personal favorite approach, as it allows for a more modular and flexible architecture.
+
+## Summary
+
+Handling multiple bounded contexts in Python can be achieved using various approaches,
+each with its own advantages and trade-offs. Here are the key takeaways:
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Pros</th>
+      <th>Cons</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Embrace Independence</td>
+      <td>
+        - Maximum autonomy for each context
+        - Simple to implement
+      </td>
+      <td>
+        - Code/data duplication
+        - Harder to maintain consistency
+      </td>
+    </tr>
+    <tr>
+      <td>Context Map</td>
+      <td>
+        - Clear relationships between contexts
+        - Enables translation between contexts
+      </td>
+      <td>
+        - Requires coordination
+        - Can add mapping complexity
+      </td>
+    </tr>
+    <tr>
+      <td>Shared Kernel</td>
+      <td>
+        - Shared understanding of core concepts
+        - Reduces duplication
+      </td>
+      <td>
+        - Teams must coordinate changes
+        - Risk of unwanted coupling
+      </td>
+    </tr>
+    <tr>
+      <td>Separate Context</td>
+      <td>
+        - Promotes clear ownership
+        - Decouples shared entities
+      </td>
+      <td>
+        - Adds another context to manage
+        - Potential for integration overhead
+      </td>
+    </tr>
+    <tr>
+      <td>Anti Corruption Layer (ACL)</td>
+      <td>
+        - Protects domain from external changes
+        - Enables translation/adaptation
+      </td>
+      <td>
+        - More code to maintain
+        - Can add latency and complexity
+      </td>
+    </tr>
+    <tr>
+      <td>Domain Events</td>
+      <td>
+        - Loose coupling
+        - Enables asynchronous communication
+        - Scalable
+      </td>
+      <td>
+        - Harder to trace flow
+        - Eventual consistency
+        - More moving parts
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+# Conclusion
+
+Handling multiple bounded contexts in Python requires careful consideration of the relationships 
+between contexts and how they communicate. By embracing independence, defining context maps, 
+using shared kernels, implementing separate contexts, utilizing anti-corruption layers, and leveraging domain events,
+you can create a modular and flexible architecture that allows each bounded context to evolve 
+independently while still being able to communicate effectively.
+
+You can always combine these approaches to suit your specific needs and requirements. Start with the simplest 
+approach that meets your needs, and then evolve your architecture as your system grows and changes.
+
+# References
+
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
+- [Architecture Patterns with Python](https://www.oreilly.com/library/view/architecture-patterns-with/9781492052197/)
+- [Bounded Contexts](https://martinfowler.com/bliki/BoundedContext.html)

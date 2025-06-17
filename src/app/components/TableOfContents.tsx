@@ -1,38 +1,30 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+
+const getHeadings = (root: HTMLElement | Document = document) =>
+  Array.from(root.querySelectorAll("h1, h2, h3, h4, h5, h6")).map((node) => ({
+    id: node.id,
+    text: node.textContent || "",
+    level: Number(node.tagName.replace("H", "")),
+  }));
 
 const TableOfContents = () => {
   const [headings, setHeadings] = useState<
     { id: string; text: string; level: number }[]
   >([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const updateHeadings = useCallback(() => {
+    setHeadings(getHeadings());
+  }, []);
 
   useEffect(() => {
-    const updateHeadings = () => {
-      const nodes = Array.from(
-        document.querySelectorAll("h1, h2, h3, h4, h5, h6")
-      );
-      setHeadings(
-        nodes.map((node) => ({
-          id: node.id,
-          text: node.textContent || "",
-          level: Number(node.tagName.replace("H", "")), // Convert H1-H6 to 1-6
-        }))
-      );
-    };
-
     updateHeadings();
-
-    const observer = new MutationObserver(() => {
-      updateHeadings();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
+    const target = containerRef.current || document.body;
+    const observer = new MutationObserver(updateHeadings);
+    observer.observe(target, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, []);
+  }, [updateHeadings]);
 
   return (
     <nav className="table-content sticky top-8 p-4 rounded w-64 max-h-[80vh] mt-8 overflow-auto">
