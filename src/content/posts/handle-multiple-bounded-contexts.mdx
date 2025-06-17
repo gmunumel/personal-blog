@@ -401,7 +401,7 @@ class AccountAdapter:
 The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
 This allows the _Human Resources Context_ to create and remove accounts in the _Account Management Context_ without needing to understand its internal workings.
 
-### Account Translator
+### Translator
 
 The implementation of the `AccountTranslator` class is straightforward. It provides two static methods for
 translating between the `HrAccount` and `AccountManagementAccount` entities.
@@ -594,6 +594,10 @@ changes:
 - Update `HrAccount` class to publish the `AccountCreated` domain event when a new account is created.
 - Update `FinanceAccount` class to handle the `AccountCreated` domain event and update its state accordingly.
 
+In the following implementation I will assume that the _Human Resources Context_ is responsible for creating the account,
+and the _Finance Context_ is responsible for handling the account balance. 
+The aggregate root will be the `Account` entity in the _Human Resources Context_.
+
 ```python
 # no-run
 # src/domain_event/dispatcher.py
@@ -674,6 +678,28 @@ dispatcher.subscribe(AccountCreated, handle_account_created_event)
 
 There is a new method `handle_account_created_event` that handles the `AccountCreated` domain event and updates
 the state of the `Account` in the _Finance Context_.
+
+Following is the sequence diagram that illustrates the flow of the `AccountCreated` domain event 
+from the _Human Resources Context_ to the _Finance Context_.
+
+```mermaid
+// title: Sequence Diagram - Domain Events Across Bounded Contexts
+// caption: Flow of AccountCreated event from HR to Finance Context.
+// css: w-4xl h-full bg-white py-3
+sequenceDiagram
+    participant HR as HrAccount<br/>(Human Resources Context)
+    participant Dispatcher as DomainEventDispatcher
+    participant Finance as FinanceAccount<br/>(Finance Context)
+
+    HR->>Dispatcher: publish(AccountCreated)
+    Dispatcher->>Finance: handle_account_created_event(AccountCreated)
+    Finance->>Finance: Update balance with event.salary
+    Finance-->>Dispatcher: (done)
+```
+
+`HrAccount` publishes the `AccountCreated` domain event to the `DomainEventDispatcher`.
+The `DomainEventDispatcher` then dispatches the event to the `FinanceAccount`, which handles the event and updates its state accordingly.
+This allows both contexts to communicate effectively without tight coupling, ensuring
 
 This is my personal favorite approach, as it allows for a more modular and flexible architecture.
 
