@@ -92,7 +92,7 @@ In the example of the _Finance Context_ and _Human Resources Context_, we could 
 In Python the name of the entity can be the same, but they will be defined in different modules or classes.
 
 ```python
-# src/finance/domain/model/account.py
+# src/application/domain/model/finance/account.py
 class Account:
     def __init__(self, account_id, balance):
         self.account_id = account_id
@@ -122,7 +122,7 @@ The `Account` class in the _Finance Context_ with methods to deposit, withdraw, 
 This class is independent of the _Human Resources Context_, allowing it to evolve without affecting the other context.
 
 ```python
-# src/hr/domain/model/account.py
+# src/application/domain/model/hr/account.py
 class Account:
     def __init__(self, employee_id, salary):
         self.employee_id = employee_id
@@ -284,7 +284,7 @@ They communicate with this context through its API or events, allowing them to r
 
 ```python
 # no-run
-# src/domain/services/account_management.py
+# src/application/domain/services/account_management.py
 class AccountManagement:
     def __init__(self):
         self.accounts = {}
@@ -378,29 +378,6 @@ We take advantage of [Design Patterns](https://en.wikipedia.org/wiki/Design_Patt
 maintain clear boundaries between the _Human Resources Context_ and _Account Management Context_,
 while still enables effective communication.
 
-### Adapter
-
-The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
-
-```python
-# no-run
-# src/hr/acl/account_adapter.py
-from src.hr.acl.account_service import AccountService
-
-class AccountAdapter:
-    def __init__(self, account_management_service):
-        self.account_management_service = account_management_service
-
-    def create_account(self, hr_account):
-        self.account_management_service.create_hr_account(hr_account)
-
-    def remove_account(self, hr_account):
-        self.account_management_service.remove_hr_account(hr_account)
-```
-
-The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
-This allows the _Human Resources Context_ to create and remove accounts in the _Account Management Context_ without needing to understand its internal workings.
-
 ### Translator
 
 The implementation of the `AccountTranslator` class is straightforward. It provides two static methods for
@@ -408,16 +385,17 @@ translating between the `HrAccount` and `AccountManagementAccount` entities.
 
 ```python
 # no-run
-# src/hr/acl/account_translator.py
-from src.hr.domain.model.account import Account as HrAccount
-from src.account_management.domain.model.account import Account as AccountManagementAccount
+# src/application/domain/model/hr/acl/account_translator.py
+from src.application.domain.model.hr.account import Account as HrAccount
+from src.application.domain.model.account_management.account import Account as AccountManagementAccount
 
 class AccountTranslator:
     @staticmethod
     def hr_to_account_management(hr_account: HrAccount) -> AccountManagementAccount:
         return AccountManagementAccount(
             account_id=hr_account.employee_id,
-            balance=hr_account.salary
+            salary=hr_account.salary,
+            balance=0
         )
 
     @staticmethod
@@ -432,13 +410,41 @@ The `AccountTranslator` class provides methods to translate between the `HrAccou
 This allows the _Human Resources Context_ to communicate with the _Account Management Context_ using a common
 language (PL), ensuring that both contexts can evolve independently without affecting each other.
 
+### Adapter
+
+The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
+
+```python
+# no-run
+# src/application/domain/model/hr/acl/account_adapter.py
+from src.application.domain.model.hr.acl.account_translator import AccountTranslator
+
+class AccountAdapter:
+    def __init__(self, account_management_facade):
+        self.account_management_facade = account_management_facade
+
+    def create_hr_account(self, hr_account):
+        account_management_account = AccountTranslator.hr_to_account_management(
+            hr_account
+        )
+        return self.account_management_facade.create_account(account_management_account)
+
+    def remove_hr_account(self, hr_account):
+        return self.account_management_facade.remove_account(hr_account.employee_id)
+```
+
+The `AccountAdapter` class provides an interface for the _Human Resources Context_ to interact with the _Account Management Context_.
+This allows the _Human Resources Context_ to create and remove accounts in the _Account Management Context_ without needing to understand its internal workings.
+The translator `AccountTranslator` is used to convert a `HrAccount` to `AccountManagementAccount`.
+
+
 ### HTTP Client (Facade)
 
 Our Open Host Service is a HTTP client to interact with the _Account Management Context_.
 
 ```python
 # no-run
-# src/hr/acl/http_client.py
+# src/application/domain/model/hr/acl/http_client.py
 import requests
 
 class HttpClient:
@@ -468,27 +474,22 @@ within the _Human Resources Context_ and not in `acl` package.
 
 ```python
 # no-run
-# src/hr/domain/service/account_service.py
-from src.hr.domain.model.account import Account as HrAccount
-from src.account_management.domain.model.account import Account as AccountManagementAccount
-from src.hr.acl.account_translator import AccountTranslator
+# src/application/domain/service/hr/account_service.py
+from src.application.domain.model.hr.account import Account as HrAccount
+from src.application.domain.model.account_management.account import Account as AccountManagementAccount
+from src.application.domain.model.hr.acl.account_translator import AccountTranslator
 
 class AccountService:
     def __init__(self, account_management_service):
-        self.account_management_service = account_management_service
+        self.http_client = HttpClient(base_url="http://localhost:8000")
+        self.account_adapter = AccountAdapter(self.http_client)
 
     def maintain_account(self, hr_account: HrAccount):
-        account_management_account = AccountTranslator.hr_to_account_management(hr_account)
-        self.account_management_service.create_account(
-            account_id=account_management_account.account_id,
-            balance=account_management_account.balance,
-            salary=hr_account.salary
-        )
+        return self.account_adapter.create_hr_account(hr_account)
 ```
 
 The `AccountService` class provides a method to maintain accounts in the _Account Management Context_.
-It uses the `AccountTranslator` to translate between the `HrAccount` and `AccountManagementAccount` entities,
-ensuring that both contexts can communicate effectively without tight coupling.
+This method uses the `AccountAdapter` to create a new account in the _Account Management Context_.
 
 Following is the sequence diagram that illustrates the interaction between the _Human Resources Context_ and _Account Management Context_ using the ACL.
 
@@ -798,6 +799,8 @@ independently while still being able to communicate effectively.
 
 You can always combine these approaches to suit your specific needs and requirements. Start with the simplest 
 approach that meets your needs, and then evolve your architecture as your system grows and changes.
+
+Full implementation of the examples in this article can be found in the [GitHub repository](https://github.com/gmunumel/ddd-bounded-context).
 
 # References
 
