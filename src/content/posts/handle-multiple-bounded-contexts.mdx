@@ -11,7 +11,7 @@ date: 2024-11-27
 
 # Handle Multiple Bounded Contexts
 
-In **_Domain-Driven Design (DDD)_**, a **bounded context** defines the boundaries within which a particular model is defined and applicable.
+In **Domain-Driven Design (DDD)**, a **bounded context** defines the boundaries within which a particular model is defined and applicable.
 When dealing with multiple bounded contexts, it's crucial to maintain clear boundaries and ensure that each context can progress independently.
 One way to achieve this is by using **domain events**, allowing different bounded contexts to communicate without tight coupling. But is not the only way to do it.
 
@@ -70,7 +70,7 @@ One of the simplest ways to handle multiple bounded contexts is to embrace indep
 This means allowing each bounded context to progress individually, even if it means duplicating some entities or concepts.
 
 Usually the issue
-arises because both teams use the same _term_ but mean different things in their respective contexts. Refine the **_Ubiquitous Language_**
+arises because both teams use the same _term_ but mean different things in their respective contexts. Refine the **Ubiquitous Language**
 to avoid this issue.
 
 This approach can lead to a more modular and flexible architecture, as each bounded context can be developed and deployed independently.
@@ -158,7 +158,7 @@ Both models are _locally related_ but serve different purposes in their respecti
 
 A **context map** is a way to define the relationships between different bounded contexts and how they communicate with each other.
 It provides a clear separation between different parts of the system, allowing each part to develop individualy while still being able to communicate effectively.
-Result would be a coherent dialect of the **_Ubiquitous Language_** across the system.
+Result would be a coherent dialect of the **Ubiquitous Language** across the system.
 
 Steps to implement a context map:
 
@@ -259,7 +259,7 @@ record.display()
 The code above defines a `Record` class in the shared kernel that can be used by both the _Finance Context_ and _Human Resources Context_.
 This allows both contexts to share a common understanding of the `Record` entity.
 
-A shared kernel is often the **_Core Domain_** of the system, where both teams have to work together to maintain it.
+A shared kernel is often the **Core Domain** of the system, where both teams have to work together to maintain it.
 
 ## Separate Context
 

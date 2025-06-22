@@ -1,0 +1,985 @@
+---
+title: Microservices in Depth
+tags:
+  - microservices
+  - architecture
+  - software-design
+synopsis: >
+  This post explores microservices architecture in depth, discussing its benefits, challenges, and best practices for implementing it.
+date: 2024-12-05
+---
+
+# Microservices in Depth
+
+Microservices architecture is a software design approach that structures an application as a collection of
+loosely coupled services. Each service is designed to perform a specific business function and can be developed,
+deployed, and scaled independently. This architecture has gained popularity due to its flexibility,
+scalability, and ability to support continuous delivery and deployment.
+
+Microservices can be seen as a natural evolution of the **Service-Oriented Architecture (SOA)**,
+which is a design pattern that allows different services to communicate with each other over a network.
+SOA is a broader concept that encompasses various architectural styles, including microservices.
+
+Microservices take the principles of SOA and apply them at a smaller scale, focusing on building
+independent, self-contained services that can be easily managed and scaled. This reflects the old adage:
+
+> Divide and conquer.
+
+Microservices architecture is not just about breaking down a monolithic application into smaller parts;
+it is about designing services that are independent, cohesive, and can evolve independently.
+
+In this article, we will explore the principles of microservices, the benefits and challenges of adopting this architecture,
+and best practices for implementing microservices.
+
+## What makes a good service?
+
+The word **service** is used in many contexts, but in the context of microservices, it refers to a self-contained unit of functionality
+that can be independently developed, deployed, and scaled. A good service should adhere to the following principles:
+
+### Loosely Coupled
+
+Services should be independent and not tightly coupled with each other. A change in one service should not require changes in other services.
+The same principle applies to failures. A chained failure should not be allowed to propagate. Each service should have its own data store
+and should not rely on the internal implementation of other services.
+
+### Highly Cohesive
+
+Services should be focused on a specific business capability. All implementation related to a specific business logic should be encapsulated
+within the service or nearby.
+Unrelated content should be separated. This means that all the code within a service
+should be related to that capability. High cohesion makes it easier to understand, maintain, and test
+the service.
+
+### Bounded Context
+
+Organization defines business requirements, that could be modeled using the **Domain-Driven Design (DDD)** approach, which
+defines bounded contexts that eventually become microservices. Each service should have a well-defined boundary that encapsulates
+its functionality. This boundary helps to separate concerns and allows teams to work independently on
+different services without affecting each other.
+
+Below you will see an example of a microservices architecture that follows these principles.
+
+## Use Case
+
+Assume that we are building an e-commerce application **ClickCart**. The application has several business capabilities such as
+
+- User management
+- Product catalog
+- Shopping cart
+- Order management
+- Payment management
+
+Each of these capabilities can be implemented as a separate microservice. For example, the user management service
+can handle user registration, authentication, and profile management. The product catalog service can manage
+the product information, including product details, pricing, and availability. The shopping cart service can handle
+the shopping cart management, including adding and removing items, calculating totals, and managing discounts.
+
+The following figure illustrates the microservices architecture for the ClickCart application.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart.png"
+    alt="Overview of the ClickCart Model"
+    width="1000"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Overview of the ClickCart Model
+  </figcaption>
+</figure>
+
+Each component is defined with a bounded context named suffixed by _context_. For example, for product catalog, the
+bounded context name is `Product Catalog Context`. Communication between services within each bounded context is defined with
+an arrow, for instance, `User Management Context` could request product information from
+the `Product Catalog Context` to display product details to the user, the `Shopping Cart Context` can
+request product information from the `Product Catalog Context` to display product details in the shopping cart, and so on.
+
+Note that this is an amplified view of the model. In practice, each microservice within a bounded context would have its own
+communication with components inside other bounded contexts.
+
+## Monolithic vs Microservices
+
+A **monolithic application** is a single, unified software application that is built as a single unit. It typically consists of a single codebase
+that contains all the components and functionalities of the application. In contrast, a **microservices architecture** is a software design
+approach that structures an application as a collection of loosely coupled services, each designed to perform a specific business function.
+
+The following figure shows a monolithic application architecture for the ClickCart application.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_monolithic.png"
+    alt="Monolithic ClickCart Architecture"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Monolithic ClickCart Architecture
+  </figcaption>
+</figure>
+
+Each component has its own service and repository, that eventually request or store data in a shared database. See the next figure
+for a comparison of the monolithic architecture with the microservices architecture.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_microservices.png"
+    alt="Microservices ClickCart Architecture"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Microservices ClickCart Architecture
+  </figcaption>
+</figure>
+
+Now each component is a separate microservice, with its own codebase and repository. Each service can be developed, deployed, and scaled independently.
+They may or may not share a database but they are not tightly coupled to each other.
+
+The following table summarizes the differences between monolithic and microservices architectures:
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Monolithic Architecture</th>
+      <th>Microservices Architecture</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Codebase</td>
+      <td>Single codebase</td>
+      <td>Multiple codebases, one for each service</td>
+    </tr>
+    <tr>
+      <td>Deployment</td>
+      <td>Deployed as a single unit</td>
+      <td>Deployed independently, each service can be deployed separately</td>
+    </tr>
+    <tr>
+      <td>Scalability</td>
+      <td>Scales as a whole</td>
+      <td>
+        Each service can be scaled independently, allowing for more granular
+        scaling
+      </td>
+    </tr>
+    <tr>
+      <td>Technology Stack</td>
+      <td>Typically uses a single technology stack</td>
+      <td>
+        Each service can use its own technology stack, allowing for flexibility
+        in technology choices
+      </td>
+    </tr>
+    <tr>
+      <td>Communication</td>
+      <td>In-process communication, tightly coupled</td>
+      <td>Inter-process communication, loosely coupled</td>
+    </tr>
+    <tr>
+      <td>Data Management</td>
+      <td>Shared database, tightly coupled</td>
+      <td>Decentralized data management, each service has its own database</td>
+    </tr>
+    <tr>
+      <td>Development Teams</td>
+      <td>Typically a single team responsible for the entire application</td>
+      <td>Multiple teams, each responsible for a specific service</td>
+    </tr>
+    <tr>
+      <td>Fault Tolerance</td>
+      <td>
+        A failure in one part of the application can bring down the entire
+        application
+      </td>
+      <td>
+        A failure in one service does not affect other services, allowing for
+        better fault tolerance
+      </td>
+    </tr>
+    <tr>
+      <td>Testing</td>
+      <td>Difficult to test individual components</td>
+      <td>
+        Easier to test individual services, allowing for more granular testing
+        and faster feedback loops
+      </td>
+    </tr>
+    <tr>
+      <td>Complexity</td>
+      <td>
+        Can become complex as the application grows, leading to challenges in
+        maintenance and scalability
+      </td>
+      <td>
+        Can lead to increased complexity due to the need for inter-service
+        communication, but allows for better separation of concerns and easier
+        maintenance
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+## Holistic Microservices
+
+Microservices architecture is not just about breaking down a monolithic application into smaller parts; it is about designing services
+that are independent, cohesive, and can evolve independently. It is important to consider the entire system as a whole when designing microservices,
+rather than just focusing on individual services. This holistic approach helps to ensure that services are designed to work together
+and can be easily integrated into the overall system.
+
+In the following figure, you can see a holistic architecture for any application.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_holistic.png"
+    alt="Holistic View of an Application"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Holistic View of an Application
+  </figcaption>
+</figure>
+
+This figure shows the holistic view of an application. The steps to develop a microservices architecture include:
+
+- **Design & Refactoring**: Design the services and refactor the existing code to fit the microservices architecture.
+- **Development & Refactoring**: Develop the services and refactor the code as needed to ensure that services are independent,
+  cohesive, and can evolve independently.
+- **Testing**: Test the services to ensure that they work as expected and can be integrated into the overall system.
+- **Monitoring**: Monitor the services to ensure that they are performing well and can handle the expected load. This includes:
+  - **Continuous Integration (CI)**: Automate the build and test process to ensure that services can be deployed quickly and reliably.
+  - **Continuous Deployment (CD)**: Automate the deployment process to ensure that services can be deployed to production quickly and reliably.
+
+The team may consist of one developer or multiple but the goal is to have a small team that can work independently on the services.
+
+Next we will explore the principles of microservices architecture in more detail.
+
+## Principles of Microservices
+
+Microservices architecture is based on several key principles that guide the design and implementation of services.
+These principles help to ensure that services are loosely coupled, highly cohesive, and can be developed, deployed, and scaled independently.
+
+### Model Around Business
+
+Microservices should be designed around interfaces structured around business-bounded contexts and domain boundaries. Business-bounded interfaces tend to be more stable
+than those structured around technical layers Using DDD or similar approaches can help to identify these boundaries and
+define the services accordingly. Each service should encapsulate a specific business capability and should be responsible for
+managing its own data and business logic. This approach helps to ensure that services are focused on
+a specific business function and can be developed, deployed, and scaled independently.
+
+### Automate Everything
+
+Automation is a key principle of microservices architecture. It helps to ensure that services can be developed, deployed, and scaled
+independently and consistently. Automation can be applied to various aspects of the development and deployment process,
+including:
+
+#### Automated Testing
+
+Automated testing is essential for ensuring the quality and reliability of microservices. It helps to catch bugs early in the development process
+and ensures that services behave as expected. Automated tests can include unit tests, service tests, and end-to-end tests.
+Tests should be designed to run as quickly as possible.
+Follow the
+[Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html#TheTestPyramid) approach,
+which suggests that the majority of tests should be unit tests, followed by service tests, and finally end-to-end tests. Indeed, end-to-end tests
+should be kept to a minimum due to their complexity and potential for flakiness, unknown ownership, and long execution times.
+Or even better, replaced with Consumer-Driven Tests (CDTs).
+
+##### Consumer-Driven Tests
+
+**Consumer-Driven Tests (CDTs)** are a testing approach that focuses on avoiding a breaking change in consumers. One way to achieve
+this is by writing a **consumer-driven contract (CDC)**. With CDCs, define the expectations of a consumer on a service (or producer).
+On this approach, do not need to stub/mock the producer, but instead, can use the real service to run the tests.
+This allows us to test the service in a more realistic environment and ensures that the service behaves as expected from the consumer's perspective.
+
+One popular tool for implementing CDTs is [Pact](https://docs.pact.io/), which allows you to define contracts between consumers and producers
+and automatically generate tests based on those contracts. Pact supports multiple programming languages and can be integrated into
+various testing frameworks.
+
+Since CDCs define expectations for how the consumer-facing service should behave, they can be run against the customer service by itself with any
+of its downstream dependencies stubbed out.
+
+#### Continuous Integration and Deployment
+
+**Continuous Integration (CI)** and **Continuous Deployment (CD)** are essential for automating the build, test, and deployment processes.
+CI ensures that code (artifact) changes are automatically built and tested, while CD automates the deployment of services. This approach helps to ensure
+that services can be deployed quickly and reliably, reducing the time it takes to deliver new features and fixes to users.
+
+With CI, the core goal is to keep everyone in sync with each other, which is achieved by making sure that newly checked-in code properly integrates
+with existing one. While for CD, the goal is to automate the deployment process, so that new code can be deployed to production
+quickly and reliably.
+
+In summary, by modeling the entire path to production, increased visibility and traceability of the process, and reduce the time between
+releases.
+
+In the following figure you can see a typical CI/CD pipeline for microservices.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_ci_cd.png"
+    alt="Continuous Integration and Deployment Pipeline for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Continuous Integration and Deployment Pipeline for ClickCart
+  </figcaption>
+</figure>
+
+At the top of the figure, you can see the CI pipeline for the ClickCart application, each service has its own CI pipeline that runs
+tests, builds the service, and deploys it to a `INT` (integration) environment. The CD pipeline then promotes the service
+to production as shown in the bottom of the figure.
+
+#### Consistent Deployment
+
+Consistent deployment is essential for ensuring that services can be deployed reliably and consistently across different environments.
+Trigger a deployment of a microservice on demand in a variety of situations, from deployment locally for dev and test to production
+deployments. It's also important to keep the deployment mechanism as similar as possible from dev to production.
+
+To deploy an artifact, you need to provide the following information:
+
+- `artifact`: the artifact to be deployed, such as a `user`, `product`, or `order` service.
+- `environment`: the environment to deploy the artifact, such as `dev`, `test`, or `prod`.
+- `version`: the version of the artifact to be deployed, such as `1.0.0`, `1.0.1`, or `2.0.0`. `local` and `latest` are also valid versions.
+
+Bellow are examples of how to deploy a microservice using the `clickcart` CLI tool.
+
+```bash
+# Deploy the user service to the dev environment with version 1.0.0
+deploy artifact=user environment=dev version=1.0.0
+
+# Deploy the product service to the test environment with the latest version
+deploy artifact=product environment=test version=latest
+```
+
+The tool used to automate this process is called [Fabric](https://www.fabfile.org/). It is
+design to map command-line calls to functions, along with good support for handling
+tasks like SSH into remote machines. Pair it with an AWS client library like [Boto](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html),
+and you have everything you need to fully automate very large AWS environments.
+
+#### Environment Definition
+
+The environment definition is essential for ensuring that services can be deployed consistently across different environments.
+As shown in the CD pipeline figure in the <a href="#continuous-integration-and-deployment">Continuous Integration and Deployment Section</a>,
+there are at least four distinct environments: one environment where run slow tests, another for `INT`, another for performance,
+and a final one for production. Each environment should be configured independently and isolated from others.
+
+Keep in mind that the service to deploy it is the same in all these different environments, but each environment serves a
+different purpose. For example, the `DEV` environment is used for development and testing, potentially against stubbed
+collaborators, while in `PRD` environment multiple copies of my service could run in a load balanced fashion, or
+perhaps split across one or more data centers.
+
+Managing environments for single-artifact monolithic systems can be challenging, especially if you don't have access to systems that are
+easily automatable. When you think about multiple environments per microservice, this can be more daunting.
+
+#### Custom Images
+
+One of the challenges with automated configuration management systems can be the time taken to run the scripts on a machine.
+To address this, you can create custom images that contain the necessary dependencies and configurations for your services.
+This approach allows you to quickly spin up new instances of your services without having to run the configuration scripts every time.
+
+Tools like [Ansible](https://docs.ansible.com/), [Puppet](https://www.puppet.com/) or [Chef](https://www.chef.io/) can be used to create
+custom images that contain the necessary dependencies and configurations for your services.
+These tools can be smart and will avoid installing software that is already present. But this does not mean that running
+the scripts on existing machines will always be fast, unfortunately, as running all the checks takes time.
+
+Images can be platform-specific or operating system-specific.
+
+##### Platform-Specific Images
+
+Platform-specific images are tailored for a specific platform, such as Docker or Kubernetes. These images contain all the necessary dependencies
+and configurations for running your services on that platform. For example, you can create a Docker image that contains your service code,
+dependencies, and configurations, allowing you to quickly deploy your service on any machine that supports Docker.
+
+Additionally, you can use [Python eggs](https://www.geeksforgeeks.org/python/what-is-a-python-egg/) or wheels to create platform-specific packages that can be easily installed on the target platform.
+This approach allows you to package your service code and dependencies into a single file that can be easily distributed and installed on the target platform.
+
+Notice that, from a microservice point of view, and depending on your technology stack, this image may not be enough by itself. You would
+expect to use a process manager running inside Apache or Nginx. So, there is a need to install and configure other software in order
+to deploy and launch images.
+
+##### Operating System-Specific Images
+
+Operating system-specific images are tailored for a specific operating system, such as Ubuntu or CentOS. These images contain all the necessary
+dependencies and configurations for running your services on that operating system. For example, you can create an Ubuntu image that contains
+your service code, dependencies, and configurations, allowing you to quickly deploy your service on any machine that runs Ubuntu.
+
+For example, you can use [Packer](https://www.packer.io/) to create operating system-specific images that can be easily deployed on your target platform.
+Or [Nuitka](https://nuitka.net/) to compile your Python code into a standalone executable that can be easily deployed on your target platform.
+
+If handling multiple operating systems is a problem, agree with your team to move to one OS-based package manager that simplifies the
+deployment process.
+
+#### Immutable Servers
+
+Immutable servers are a key concept in microservices architecture. The idea is to treat servers as disposable resources that can be replaced
+rather than modified. This approach helps to ensure that services can be deployed consistently and reliably across different environments.
+When a new version of a service is deployed, the old version is replaced with the new version, rather than modifying the existing server.
+
+Preventing intruders from modifying the server configuration or install new software on the server, helps to ensure that services can be
+deployed consistently and reliably across different environments.
+
+### Hide Implementation Details
+
+Another way to rephrase the title would be: hide internal implementation details and expose only the necessary interfaces. It is a core principle
+of microservices architecture.
+This principle helps to ensure that services are loosely coupled and can be developed, deployed, and scaled independently.
+This principle is often referred to as the **Open-Closed Principle (OCP)**, which states that software entities should be open for extension but closed for
+modification.
+This means that services should be designed in a way that allows them to be extended with new functionality without modifying the existing code.
+
+#### Modeling Bounded Contexts
+
+Modeling bounded contexts is a key aspect of microservices architecture. It helps to define the boundaries of each service and ensures that services are
+focused on a specific business capability. In microservices, services should be modeled after business domains, not technical concepts.
+
+When modeling bounded contexts, consider the following:
+
+- Identify the business capabilities that can be implemented as separate services.
+- Define the boundaries of each service based on the business capabilities.
+- Ensure that each service has a well-defined interface that exposes only the necessary functionality.
+- Avoid exposing internal implementation details of the service.
+- Use domain events to communicate between services, rather than direct calls, to avoid tight coupling.
+
+#### Hide Databases
+
+Each service should have its own database and should not rely on the internal implementation of other services. However, it is important to
+hide the database implementation details from other services. This means that other services should not be aware of the database schema or
+the specific database technology used by the service. Instead, services should expose a well-defined interface that allows other
+services to interact with the service without knowing the internal details.
+
+Below is a progression of a split database schema from a monolithic application to a microservices architecture, using as starting point the situation
+in the figure about <a href="#monolithic-vs-microservices">Monolithic vs Microservices Section</a>.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_split_db.png"
+    alt="Splitting the Database in ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Splitting the Database in ClickCart
+  </figcaption>
+</figure>
+
+On the left side of the figure you can see the monolithic application with a single database schema that contains all the data for
+the application. In the middle you can see the split on database schemas into: `Product Schema` and `User Schema`.
+On the right side of the figure you can see the microservices architecture with each service having its own database schema.
+
+With databases, microservices principles are not maintained: strong cohesion and loose coupling, both strong cohesion and loose coupling are compromised.
+Databases make it easy for services
+to share data, but do nothing to support _shared behavior_. The internal representation is exposed over the wire to the consumers,
+and it is very difficult to avoid making breaking changes, which inevitably leads to a fear of any change at all.
+
+#### Data Pumps or Event Data Pumps
+
+To avoid tight coupling between services, you can use data pumps or event data pumps to share data between services.
+
+**Data pumps** are services that are responsible for moving data between locations. They can be used to synchronize data between services or to
+replicate data from one service to another. They should be built and managed by the same team that manages the service.
+This can be something as simple as a command-line program triggered via `cron`. The coupling on the reporting schema itself remains, but can be
+treated as a published API that is hard to change.
+
+**Event data pumps** are services that are responsible for moving events between services.
+They can be used to publish events from one service and subscribe to events from another service.
+This approach allows services to share data without exposing their internal implementation details. If you store which events have already
+been processed, you can avoid processing the same event multiple times.
+
+The main downside to this approach is that all the required information must be broadcast as events, and it may not scale as well as a
+data pump for larger volumes of data.
+
+The biggest extended example for data pumps or event data pumps is to generate reports. Usually, reports are generated by aggregating data from multiple services.
+For example, you can create a data pump that aggregates data from the `User Management Context`, `Product Catalog Context`, and `Order Management Context`
+a report that shows the number of users, products, and orders in the system. This approach allows you to generate reports without
+tightly coupling the services and exposing their internal implementation details. Data pumps might create a specialized database for the report,
+or use a data warehouse to store the aggregated data.
+
+In the following figure you can see an example of a data pump that aggregates data from multiple services to generate a report.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_data_pump.png"
+    alt="Data Pump for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Data Pump for ClickCart
+  </figcaption>
+</figure>
+
+The `Product Service` will read or write to a database, which after a pre-defined interval of time will produce a data pump `Central Reporting DB`.
+Then the `Reporting Tools` will read or use SQL query from the data pump database to generate reports.
+
+#### Technology Agnostic
+
+Microservices should be technology agnostic, meaning that they can be developed using different programming languages, frameworks, and technologies.
+This approach allows teams to choose the best technology for each service based on their specific requirements and expertise.
+This flexibility allows teams to experiment with new technologies and adopt them when they prove to be beneficial.
+
+##### REST
+
+**REST (REpresentational State Transfer)** is a popular architectural style for building web services. It is based on the principles of
+stateless communication, resource-based design, and the use of standard HTTP methods (`GET`, `POST`, `PUT`, `DELETE`) for interacting with resources.
+RESTful services are designed to be simple, scalable, and easy to use. They expose resources through a well-defined interface and
+allow clients to interact with those resources using standard HTTP methods.
+
+HTTP itself defined some useful capabilities that play very well with the REST style. For example, the HTTP verbs (e.g., `GET`, `POST`, `PUT`, `DELETE`) already
+have well-understood meanings in the HTTP specification as to how they should work with resources.
+
+##### GraphQL
+
+**GraphQL** is a query language for APIs that allows clients to request only the data they need. It provides a flexible and efficient
+way to interact with services by allowing clients to specify the structure of the response they want.
+
+GraphQL is often used as an alternative to REST for building APIs, as it allows clients to retrieve data from multiple resources in a single request,
+reducing the number of round trips required to fetch data. It also allows clients to evolve their queries without breaking existing services,
+making it easier to add new features and functionality over time.
+
+HTTP can be used to implement GraphQL APIs, allowing clients to interact with services using standard HTTP methods.
+
+##### RPC
+
+**RPC (Remote Procedure Call)** is a protocol that allows clients to invoke methods on remote services as if they were local methods.
+It provides a way to call functions or procedures on remote services and receive the results.
+
+Note that HTTP can be used to implement RPC too. SOAP, for example, gets routed over HTTP, but unfortunately uses very little of the
+specification. Verbs are ignored, as are simple things like HTTP error codes.
+
+RPC have the advantage of being more efficient than REST or GraphQL, as it allows clients to invoke methods directly on remote services
+without having to go through a resource-based interface. However, it can be more complex to implement and may require additional
+infrastructure to handle the communication between clients and services. It also enables technology coupling, like Java RMI, which
+can limit the technology in client and server sides. And in some implementations, can lead to some nasty forms of brittleness: objects
+used as part of binary serialization can effectively become _expand-only_ types.
+
+##### gRPC
+
+**gRPC (gRPC Remote Procedure Call)** is a modern open-source RPC framework that uses HTTP/2 for transport and Protocol Buffers
+as the interface definition language. It provides a way to define services and their methods using Protocol Buffers, which allows for
+efficient serialization and deserialization of data.
+
+An advantage of gRPC is that it supports multiple programming languages, allowing teams to develop services in different languages
+while still being able to communicate with each other. It also provides features such as bi-directional streaming, flow control, and
+cancellation, making it suitable for building high-performance and scalable services. However, gRPC is not as widely adopted as REST or GraphQL,
+and may require additional infrastructure to handle the communication between clients and services.
+
+### Decentralize Everything
+
+To maximize the autonomy that microservices make possible, there is always a search for the chance to delegate decision making and control
+to the teams that own the services themselves. This process starts with embracing _self-service_ wherever possible, allowing people
+to deploy software on demand, making development and testing as easy as possible, and avoiding the need for separate teams to perform these
+activities.
+
+#### Service Ownership
+
+Each service should be owned by a team that is responsible for its development, deployment, and maintenance. This approach helps to ensure that
+services are developed and maintained by teams that have a deep understanding of the service's functionality and requirements.
+This principle is often referred to as the **Single Responsibility Principle (SRP)**, which states that a class should have only one reason to change.
+This means that each service should be responsible for a specific business capability and should not be responsible for multiple capabilities.
+
+For many teams, _ownership_ extends to all aspects of the service, from sourcing requirements to building, deploying, and maintaining the
+application. This model is especially prevalent with microservices, where it is easier for a small team to own a small service. This
+increased level of ownership leads to increased autonomy and speed of delivery.
+
+#### Align Teams to the Organization
+
+Aligning teams to the organization is essential for ensuring that services are developed and maintained by teams that have a deep understanding of the
+service's domain, functionality and requirements. In the study _Exploring the Duality Between Product and Organizational Architectures_ by
+[Alan MacCormack, John Rusnak, and Carliss Baldwin](https://www.sciencedirect.com/science/article/abs/pii/S0048733312001205), the authors look at a number
+of different software systems, loosely categorized as created either by _loosely coupled organizations_ or _tightly coupled organizations_.
+For tightly coupled organizations, think commercial product firms that are typically colocated with strongly aligned visions and goals, while loosely
+coupled organizations are well represented by distributed open source communities.
+
+The study found that the more loosely coupled organizations actually created more modular, less coupled systems, whereas the more tightly focused
+organization's software was less modularized.
+
+Notice that we are building software to match how our organization works.
+
+#### Shared Governance
+
+When some overarching guidance is needed, try to embrace a **shared governance** model where people from
+each team collectively share responsibility for evolving the technical vision of the system. In the context
+of DDD this means to involve domain experts in the design and evolution of the system, who, with developer support, can generate
+a _ubiquitous language_ that is shared by both parties.
+
+#### Choreography over Orchestration
+
+**Choreography** and **orchestration** are two approaches to managing the interactions between services in a microservices architecture.
+Orchestration is a centralized approach where a central service is responsible for managing the interactions between services.
+Choreography is a decentralized approach where each service is responsible for managing its own interactions with other services.
+
+Choreography is often preferred in microservices architecture, as it allows services to be developed and deployed independently
+without relying on a central service. This approach can be handled with asynchronous events, where each service
+is responsible for publishing and subscribing to events that are relevant to its functionality. This means additional work
+is needed to ensure that you can monitor and track that the right things have happened.
+
+Orchestration, on the other hand, can lead to tight coupling between services and can make it difficult to scale and maintain the system.
+Tend to be more brittle with a higher cost of change.
+
+In the following figure you can see an example of orchestration vs choreography.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_data_orchestration_vs_choreography.png"
+    alt="Orchestration vs Choreography for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Orchestration vs Choreography for ClickCart
+  </figcaption>
+</figure>
+
+On the left side of the figure you can see an example of orchestration, where a central service `User Management Service`
+is responsible for communicating with other services to create an user: `Allocate Service`, `Post Service`, and `Email Service`.
+On the right side of the figure you can see an example of choreography, where an `User Management Service` is responsible for
+publish an event `User Created Event`, and other services subscribe to this event to perform their own actions.
+
+### Deploy Independently
+
+Microservices should be designed to allow for independent deployment of services. This means that each service can be deployed
+without affecting other services, allowing for faster development and deployment cycles.
+
+#### Coexist Versioned Endpoints
+
+To allow for independent deployment of services, it is important to version the endpoints of each service. This means that each service
+can have multiple versions of its endpoints that can coexist. This approach allows for backward compatibility and
+ensures that existing clients can continue to use the service without breaking changes.
+This is often referred to as **API versioning** and can be achieved by including the version number in the URL of the endpoint, such as
+`/api/v1/users` or `/api/v2/users`. This allows clients to specify which version of the API they want to use, and allows services to evolve
+without breaking existing clients.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_different_endpoints.png"
+    alt="Different Versioning Endpoints for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Different Versioning Endpoints for ClickCart
+  </figcaption>
+</figure>
+
+The figure above shows an example of different versioning endpoints for `ClickCart` and `Admin` services. On the left side, you can see
+the `ClickCart` and `Admin` are pointing to the same version `V1` which uses the `User Service` **b42**. In the middle, you can see the `ClickCart` and `Admin`
+pointed to different versions `V1` and `V2` respectively, which uses the `User Service` **b50**. On the right side, you can see the `ClickCart` and `Admin`
+pointed to the same version `V2`, which uses the `User Service` **b66**.
+
+This is an example of the expand and contract pattern, which allows phasing in of breaking changes in. It is possible to _expand_ the capabilities for
+support both old and new ways of doing something. Once the old consumer does things in the new way, a _contract_ takes place in the API, removing the old functionality.
+
+To handle multiple versions in RPC you should use protocol buffers by putting methods in different namespaces. For example, `v1.createUser` and
+`v2.createUser`, but when trying to support different versions of the same types being sent over the network, this can become really painful.
+
+##### Use Multiple Concurrent Service Versions
+
+In addition to versioning endpoints, there are situations where it is necessary to support multiple concurrent versions of a service.
+This can happen when a new version of a service is deployed while existing clients are still using the old version. In this case, it is important to
+ensure that both versions of the service can coexist and handle requests from clients that are using either version.
+This can be achieved by using techniques such as **canary releases** or **blue/green deployments**, which allow for gradual rollout of new versions
+of a service while still supporting existing clients.
+
+A useful tool is semantic versioning.
+
+##### Semantic Versioning
+
+**Semantic Versioning (SemVer)** is a versioning scheme that uses a three-part version number: `MAJOR.MINOR.PATCH`. The major version is incremented
+when there are breaking changes, the minor version is incremented when new features are added in a backward-compatible manner, and the patch version is
+incremented when bug fixes are made in a backward-compatible manner. This approach allows clients to understand the impact of changes to the service
+and allows services to evolve without breaking existing clients.
+
+#### One Service per Host
+
+In a microservices architecture, it is common to deploy each service on its own host or container. It allows for better resource utilization,
+as each service can be scaled independently based on its specific requirements. This approach prevents the side effects of running multiple services on the same hos,
+making monitoring and remediation much simpler. It also potentially reduces single points of failure, as each service can be restarted or replaced
+independently without affecting other services.
+
+In Linux world, this is often achieved by using containers, such as Docker, to package and deploy services. Each service runs in its own container,
+allowing for isolation and resource allocation. This approach allows for better resource utilization, as each service can be scaled independently based on its specific requirements.
+
+The following figure shows an example of deploying each service on its container for a host.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_docker_containers.png"
+    alt="Docker Containers for ClickCart"
+    width="300"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Docker Containers for ClickCart
+  </figcaption>
+</figure>
+
+One of the challenges of deploying microservices in Docker containers is exposing the services to the outside world. Will require additional
+configuration to expose the services to the outside world, such as using a reverse proxy or load balancer to route requests to the appropriate service.
+
+#### Blue/Green Deployments
+
+**Blue/Green Deployments** are a deployment strategy that allows for zero-downtime deployments by maintaining two separate
+environments: one for the current version of the service (the "blue" environment) and one for the new version
+of the service (the "green" environment). Once the new version is deployed and
+tested, you can switch traffic to the green environment, allowing for a seamless transition to the new version.
+
+The following image shows an example of blue/green deployments for a service.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_blue_green_deployment.png"
+    alt="Blue/Green Deployment for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Blue/Green Deployment for ClickCart
+  </figcaption>
+</figure>
+
+On the left side of the figure you can see two versions of the same service `User Service`, on the left is the blue environment with version **v42**
+and on the right is the green environment with version **v100**. In the middle of the figure you can see that smoke tests are running in the green environment
+to ensure that the new version is working as expected. Once the tests pass, you can switch traffic to the green environment,
+allowing for a seamless transition to the new version, this can be viewed on the right side of the figure.
+
+##### Canary Releases
+
+**Canary Releases** are a deployment strategy that allows you to gradually roll out a new version of a service
+to a small subset of users before rolling it out to the entire user base. This approach allows you to test the new
+version in a production environment with real users, while minimizing the risk of breaking changes. If any issues
+are detected during the canary release, you can quickly roll back to the previous version without
+affecting the entire user base.
+
+This case requires additional setup comparing to blue/green deployments, as you need to set up a mechanism to route traffic to the canary version of the service.
+Also, different versions of the service are expected to coexist for longer than with blue/green, so you might be running more hardware for longer periods of time.
+
+### Isolate Failure
+
+In a microservices architecture, it is important to isolate failures to prevent them from affecting other services.
+This means that if a service fails, it should not bring down the entire system, and other services should continue to function as expected.
+This approach helps to ensure that services are resilient and can recover from failures without affecting the overall system.
+
+#### Do not Treat Remote Calls Like Local Calls
+
+In a microservices architecture, it is important to treat remote calls as potentially unreliable and not assume that they will always succeed.
+This means that you should not treat remote calls like local calls and should implement appropriate error handling and retry mechanisms to handle failures.
+This approach helps to ensure that services can continue to function even when remote calls fail, and allows for better fault tolerance and resilience in the system.
+
+Failures may result from the remote server returning an error or from users making erroneous requests.
+
+#### Antifragility
+
+**Antifragility** is a concept introduced by Nassim Nicholas Taleb in his book _Antifragile: Things That Gain from Disorder_. It refers to
+the ability of a system to not only withstand shocks and disruptions but to actually benefit from them. In the context of microservices
+architecture, antifragility means designing services that can adapt and improve in response to failures and unexpected events. Embracing and
+inciting failure through software, and building systems that can handle it, is a key aspect.
+
+This can be achieved by implementing mechanisms such as timeouts, circuit breakers, retries, fallbacks, and bulkheads to handle failures gracefully and allow
+services to recover from disruptions.
+
+##### Timeouts
+
+**Timeouts** are a mechanism used to handle remote calls that take too long to respond. They allow services to specify a maximum amount of time
+that they are willing to wait for a response from a remote service. If the remote service does not respond within the specified time,
+the request is aborted, and an error is returned to the client. This approach helps to ensure that services do not hang indefinitely waiting for a response
+from a remote service, and allows for better fault tolerance and resilience in the system.
+
+When implementing timeouts, it is important to set appropriate timeout values based on the expected response times of the remote service.
+
+##### Circuit Breakers
+
+**Circuit Breakers** are a design pattern used to prevent cascading failures in a microservices architecture. They act as a safety mechanism
+that detects when a service is experiencing failures and temporarily stops sending requests to that service. This allows the service to recover
+from failures without affecting other services in the system.
+
+When a circuit breaker is open, it prevents requests from being sent to the service, allowing it to recover from failures. Once the service
+is healthy again, the circuit breaker can be closed, allowing requests to be sent to the service again.
+
+One way to implement it is by inspecting HTTP status codes in responses. If the service returns a certain number of error codes (e.g., 5XX errors)
+within a specified time period, the circuit breaker can be opened, preventing further requests to the service.
+
+##### Retries
+
+**Retries** are a mechanism used to handle transient failures in a microservices architecture. They allow services to retry failed requests
+to a remote service in the hope that the request will succeed on subsequent attempts. This approach helps to ensure that services can continue to function
+even when remote calls fail temporarily, and allows for better fault tolerance and resilience in the system.
+
+When implementing retries, it is important to use exponential backoff to avoid overwhelming the remote service with requests. This means that
+the time between retries should increase exponentially with each failed attempt, allowing the remote service to recover from failures before
+receiving more requests. This approach helps to ensure that services are resilient and can recover from failures without affecting the overall system.
+
+A tool that can be used to implement retries is [backoff](https://github.com/litl/backoff), which provides a simple and flexible way to implement retries
+with exponential backoff in Python. It uses decorators to wrap functions and automatically handle retries with exponential backoff.
+
+An example of using backoff to implement retries with exponential backoff is shown below:
+
+```python
+# no-run
+def fatal_code(e):
+    return 400 <= e.response.status_code < 500
+
+@backoff.on_exception(backoff.expo,
+                      requests.exceptions.RequestException,
+                      max_time=300,
+                      giveup=fatal_code)
+def get_url(url):
+    return requests.get(url)
+```
+
+This code uses the `backoff` library to retry the `get_url` function when it raises a `requests.exceptions.RequestException`.
+This retry will continue until the request succeeds or the maximum time of 300 seconds is reached. The `giveup` parameter is used to specify a condition
+to stop retrying, in this case, if the response status code is between 400 and 500, which indicates a client error.
+
+#### Fallbacks
+
+**Fallbacks** are a mechanism used to handle failures in a microservices architecture by providing an alternative response when a remote service
+fails to respond or returns an error. This approach allows services to continue to function even when remote calls fail, and allows for better fault tolerance
+and resilience in the system.
+
+When implementing fallbacks, it is important to provide a meaningful response that allows the client to continue functioning without
+experiencing a complete failure. This can be achieved by providing a cached response, a default response, or an alternative response that allows
+the client to continue functioning.
+
+##### Bulkheads
+
+**Bulkheads** are a design pattern used to isolate failures in a microservices architecture. They are inspired by the concept of bulkheads in ships,
+which are compartments that can be sealed off to prevent water from flooding the entire ship in case of a leak.
+In a microservices architecture, bulkheads can be implemented by isolating services into separate compartments or containers, so that if one service fails,
+it does not affect the other services in the system. This approach helps to ensure that services are resilient and can recover from failures without
+affecting the overall system.
+
+In many ways, bulkheads are the most important pattern to implement in a microservices architecture. Timeouts, circuit breakers, retries, fallbacks help to
+free up resources when they are becoming constrained, but bulkheads can ensure they don't become constrained in the first place. [Hystrix](https://github.com/Netflix/Hystrix)
+allows you to implement bulkheads that actually reject requests in certain conditions to ensure that resources don't become even more saturated; this is known as
+_load shedding_. Sometimes rejecting a request is the best way to stop an important system from becoming overwhelmed and being a bottleneck for multiple
+upstream services.
+
+### Monitoring and Observability
+
+Monitoring and observability are essential aspects of a microservices architecture. They allow teams to gain insights into the behavior and performance of services,
+identify issues, and troubleshoot problems. In a microservices architecture, monitoring and observability are often more complex than in a monolithic application,
+as services are distributed across multiple hosts and containers, and may be written in different programming languages and frameworks.
+
+Monitoring and observability in a microservices architecture can be achieved through various techniques, such as logging, tracing, metrics collection, and
+alerting.
+
+#### Semantic Monitoring
+
+**Semantic Monitoring** is a monitoring approach that focuses on understanding the behavior and performance of services in a microservices architecture.
+It involves collecting and analyzing data from services to gain insights into their performance, availability, and reliability.
+This approach helps to ensure that services are resilient and can recover from failures without affecting the overall system.
+
+Semantic monitoring is often used in conjunction with observability, which is the ability to understand the internal state of a system
+based on its external outputs.
+
+#### Synthetic Transactions
+
+**Synthetic Transactions** are a monitoring technique that involves simulating user interactions with services to measure their performance and availability.
+This approach allows teams to proactively monitor the health of services and detect issues before they impact users.
+
+One way to implement synthetic transactions is by creating fake events in the system, such as creating a fake user, placing an order, or searching for a product.
+This can be done by writing scripts that interact with the service's API or user interface, simulating user actions, and then measuring the response times,  
+success rates, and watch the logs for any errors or issues. [Nagios](https://www.nagios.org/) can be used to run command-line jobs that inserted fake events
+into queues. It is important to mark or put a stamp over our fake events so they are easily recognized in the logs and can be filtered out when analyzing the logs.
+
+#### Aggregated Logs
+
+**Aggregated Logs** are a logging technique that involves collecting and centralizing logs from multiple services in a microservices architecture.
+This approach allows teams to analyze logs from multiple services in a single location, making it easier to identify issues and troubleshoot problems.
+
+Ecosystem like [ELK Stack](https://www.elastic.co/what-is/elk-stack) (Elasticsearch, Logstash, and Kibana) or [Grafana Loki](https://grafana.com/oss/loki/)
+can be used to collect, store, and analyze logs from multiple services in a microservices architecture. These tools allow teams to search and filter logs,
+visualize log data, and create alerts based on log events. This approach helps to ensure that services are resilient and can recover from failures without
+affecting the overall system.
+
+Following figure shows an example of aggregated logs for a microservices architecture.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_elk.png"
+    alt="Aggregated Logs using ELK for ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Aggregated Logs using ELK for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, you can see an example of aggregated logs for `ClickCart` using ELK Stack. The `Application Logs` from a `User Service` are collected
+and transformed by `Logstash` or passing directly to `Elasticsearch` for search and analysis. Then they are sent to `Kibana` allowing teams to
+search and filter logs, visualize log data, and create alerts based on log events.
+
+#### Correlation IDs
+
+**Correlation IDs** are unique identifiers that are used to track requests as they flow through a microservices architecture.
+They are often included in the headers of requests and responses, allowing teams to trace the flow of requests across multiple services.
+
+Correlation IDs are generated as **GUID (Globally Unique Identifier)** or **UUID (Universally Unique Identifier)** and are included in the headers of
+requests and responses. With the right log aggregation tooling, you are able to trace the flow of requests across multiple services by searching for
+the correlation ID in the logs.
+
+```txt
+15:00:00.000 [EROR] [ID=foo-42] User allocation failed. Error: User already exists
+15:00:01.000 [INFO] [ID=foo-42] Post service sent package successfully
+15:00:02.000 [INFO] [ID=foo-42] Email sent successfully
+```
+
+The following image shows an example of correlation IDs for a microservices architecture.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/microservices-in-depth/click_cart_correlation_ids.png"
+    alt="Correlation IDs for ClickCart"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Correlation IDs for ClickCart
+  </figcaption>
+</figure>
+
+You can see the a request to create an user is made on the `Frontend`, which is then sent to the `User Service` with a correlation ID (`foo-42`).
+The `User Service` then sends a request to the `Allocate Service`, `Post Service` and `Email Service`, passing the same correlation ID (`foo-42`) in the headers.
+Meanwhile, on the `Allocate Service`, you can see there is an error, which is logged with the same correlation ID (`foo-42`).
+
+Each service in your microservices architecture should generate and propagate correlation IDs to allow for tracing requests across services. This is where
+you need to ensure that your logging and monitoring tools are set up to capture and display correlation IDs in the logs. But also the teams are aware and willing
+to use correlation IDs in their services.
+
+Software like [Zipkin](https://zipkin.io/) or [Jaeger](https://www.jaegertracing.io/) can be used to collect and visualize traces of requests
+across multiple services in a microservices architecture.
+
+The problem with adoption of correlation IDs is that there are not mandatory from the beginning, you start using them _after_ you have a problem. Take as a rule
+of thumb to always use correlation IDs in your services, even if you don't have a problem yet. This will help you to identify and troubleshoot issues
+in the future, and will make it easier to trace requests across services.
+
+## When to not use Microservices?
+
+While microservices offer many benefits, they are not always the best solution for every application. Here are some scenarios where you might want
+to avoid using microservices:
+
+- **Small Applications**: If your application is small and simple, using microservices may introduce unnecessary complexity.
+  A monolithic architecture may be more appropriate in this case.
+- **Tight Coupling**: If your application has tightly coupled components that need to communicate frequently, a monolithic architecture may be more efficient.
+- **Limited Resources**: If your team has limited resources or expertise in managing distributed systems, it may be better to stick with a monolithic architecture.
+- **Low Scalability Requirements**: If your application does not require high scalability or performance, a monolithic architecture may be sufficient.
+
+## Conclusion
+
+Microservices architecture is a powerful approach to building scalable, resilient, and maintainable modern applications. By breaking
+down applications into smaller, independent services, teams can develop, deploy, and maintain services independently,
+allowing for faster development cycles and better fault tolerance.
+
+However, microservices architecture also introduces additional complexity and challenges, such as managing distributed systems,
+ensuring service communication, and handling failures. It is important to carefully consider the trade-offs and
+benefits of using microservices before adopting this architecture.
+
+## References
+
+- [Building Microservices, 2nd Edition](https://www.oreilly.com/library/view/building-microservices-2nd/9781492034018/)
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
+- [Architecture Patterns with Python](https://www.oreilly.com/library/view/architecture-patterns-with/9781492052197/)

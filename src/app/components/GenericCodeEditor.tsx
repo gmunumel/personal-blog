@@ -7,6 +7,7 @@ import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-jsx";
 import "prismjs/components/prism-tsx";
+import "prismjs/components/prism-bash";
 // Add more Prism language imports as needed
 // import "prismjs/themes/prism-tomorrow.css";
 

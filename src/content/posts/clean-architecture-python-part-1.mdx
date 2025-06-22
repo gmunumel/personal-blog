@@ -93,17 +93,17 @@ technologies used in the application.
 </figure>
 
 The layers in this architecture are wrapped around each other in concentric circles. The main rule is that
-source code dependencies must point inward, toward the higher-level policies and the **_Dependency Inversion Principle (DIP)_**.
+source code dependencies must point inward, toward the higher-level policies and the **Dependency Inversion Principle (DIP)**.
 The innermost circle contains the core business logic (domain services, use cases, and entities), while the outer circles contain interfaces, use cases,
 and external dependencies.
 
 Because the inner circles are independent of the outer circles, the core business logic can be implemented
-without any knowledge of the external systems, allowing us to use **_Domain-Driven Design (DDD)_** approach
+without any knowledge of the external systems, allowing us to use **Domain-Driven Design (DDD)** approach
 if desired.
 
 ### Hexagonal Architecture
 
-Hexagonal Architecture, also known as **_Ports and Adapters_**, was introduced by Alistair Cockburn
+Hexagonal Architecture, also known as **Ports and Adapters**, was introduced by Alistair Cockburn
 in his [article](https://alistair.cockburn.us/hexagonal-architecture). It emphasizes the
 separation of the application's core logic from its external dependencies, such as databases, user interfaces,
 and external services. The core logic is surrounded by ports (interfaces) that define how the application
