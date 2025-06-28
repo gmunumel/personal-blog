@@ -1,0 +1,697 @@
+---
+title: Road to Microservices - Part 1
+tags:
+  - microservices
+  - architecture
+  - monolith
+synopsis: >
+  This article explores the journey from monolithic applications to microservices, discussing the challenges, patterns, and best practices involved in this architectural shift.
+date: 2024-12-20
+---
+
+# Road to Microservices - Part 1
+
+The transition from monolithic applications to microservices is a significant architectural shift that many organizations are undertaking.
+How do you break down a large, complex monolithic application into smaller, manageable services?
+This journey includes identifying bounded contexts, helpful design patterns, why and when they should be used overall. In addition, best practices
+and common pitfalls are discussed to ensure a smooth transition.
+
+Concepts and definitions of Microservices are explained in detail in my article [Microservices In Depth](/posts/microservices-in-depth).
+
+To have more information about the topic, you can refer to the book [Monolith to Microservices](https://www.oreilly.com/library/view/monolith-to-microservices/9781492047834/)
+by Sam Newman, which provides a comprehensive guide on this transformation.
+
+This is the first part of a two-part series,
+where I will cover the concepts, patterns, and techniques for breaking down a monolithic application into microservices.
+
+Before jumping into the details, I want to define a context where all the concepts and examples will be explained.
+
+## Use Case
+
+We are continuing with the example of a monolithic e-commerce application **ClickCart**, which includes various functionalities such as user
+management, product catalog, shopping cart, order management, and payment handling.
+
+The goal is to break down this monolith into smaller, independent microservices that can be developed, deployed, and scaled independently,
+while in the process explaining possible techniques, patterns, and best practices.
+
+To have a whole overview of the use case you can refer to the [article](/posts/microservices-in-depth/#use-case) where I provide a detailed
+description of the ClickCart application.
+
+The following image is a simplified model of ClickCart monolithic application:
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_simplified.png"
+    alt="Simplified Model of ClickCart Monolithic Application"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Simplified Model of ClickCart Monolithic Application
+  </figcaption>
+</figure>
+
+In the figure above you can see the multiple interactions between different bounded contexts of the ClickCart monolithic application. All the
+components send requests to the `Notification Center Context` to communicate changes in the system.
+
+## Preparation
+
+Before starting the transformation, it is essential to prepare the monolithic application for the migration to microservices. It would be helpful
+to review or produce a diagram of the current architecture, identify the bounded contexts, and understand the dependencies between them, so
+it is easier to think rationally about what microservices might need to be created. When it comes to decomposing an existing monolith system,
+there is a need to have a logical decomposition strategy, which can be based on various factors such as business capabilities, subdomains, or technical layers.
+
+### Domain-Driven Design (DDD)
+
+**Domain-Driven Design (DDD)** is a powerful approach that helps in understanding the domain and identifying bounded contexts, which are
+crucial for defining the boundaries of microservices. Also helps to establish the priority of the services to be created, according to the
+business needs and the complexity of the existing monolith.
+
+Looking again at the ClickCart monolithic application, we can identify several bounded contexts such as:
+
+- **User Management Context**: Handles user registration, authentication, and profile management.
+- **Product Catalog Context**: Manages product information, categories, and inventory.
+- **Shopping Cart Context**: Manages the user's shopping cart, including adding and removing products.
+- **Order Management Context**: Handles order processing, including order creation, status updates, and history.
+- **Payment Management Context**: Manages payment processing, including payment methods and transaction history
+- **Monitoring Center Context**: Collects and analyzes metrics, logs, and traces for the application.
+- **Notification Center Context**: Handles notifications and communication between different contexts.
+
+Each of these bounded contexts represents a potential unit of decomposition for the ClickCart monolithic application.
+
+### Event Storming
+
+**Event Storming** is a collaborative workshop technique that helps teams to explore and model the domain by identifying events,
+commands, and aggregates. This session can be used to gather insights from domain experts and stakeholders,
+and to create a shared understanding of the domain. The goal is to identify the key events that
+trigger changes in the system, and to define the commands that lead to those events.
+
+Among the results of the Event Storming sessions, we can identify the following key tasks for the ClickCart application:
+
+- Define a new structure for teams, based on the bounded contexts identified in the previous section, and considering ownership
+  and responsibilities.
+- Realize the migration in smaller steps, starting with the most critical bounded contexts.
+- A microservice is only considered finished when it is fully functional, including the necessary infrastructure, monitoring, logging, and
+  deployed.
+
+This technique along with DDD can help to identify the bounded contexts and their interactions, which is crucial for defining
+the boundaries of microservices.
+
+### Define the Priority
+
+After understanding the domain and identifying the bounded contexts, it is essential to define the priority of the services to be created.
+A strong candidate for early extraction is `Monitoring Context`, because it is a cross-cutting concern that can provide valuable
+insights into the performance and health of the application. And it can be implemented as a separate microservice without affecting the
+existing upstream dependencies because it does not have any dependencies on the other contexts.
+
+On the other hand, the `Notification Center Context` is a good candidate to be the last one to be created, because it has multiple
+dependencies on the other contexts, and it is responsible for handling notifications and communication between different contexts.
+
+This represents a good starting point for the transformation, but it is important to note that the domain model represents a _logical_
+view of an existing system. There is no guarantee that the underlying code structure of the monolith is structured in this way. We still
+need to look at the codebase to understand the existing dependencies and interactions between the components. A domain model like this
+won't show which bounded context stores data in a database, which ones are using a message broker, or which ones are using an external API.
+
+## Split the Monolith
+
+Once the preparation is done, the next step is to start splitting the monolithic application into smaller, independent microservices. There
+are several techniques and patterns that can be used to achieve this, depending on the complexity of the monolith and the dependencies between the components.
+
+### Copy & Paste
+
+The simplest way to start splitting the monolith is to copy and paste the code of the bounded context into a new microservice. This approach
+is suitable for small, self-contained components that do not have any dependencies on the other components of the monolith. For example, if we
+want to create a new microservice for the `Monitoring Context`, we can copy the code of the monitoring component from the monolith and paste it into
+a new microservice. This approach is quick and easy, but it is not suitable for complex components that have dependencies on other components or
+that require significant changes to the codebase.
+
+With this approach, two versions of the code will exist, one in the monolith and one in the new microservice. The monolith should not be deleted
+until the new microservice is fully functional and tested. This allows for a smooth transition and rollback if necessary.
+
+### Refactoring the Monolith
+
+Refactoring the monolith is a more complex approach that involves making changes to the codebase to prepare it for the migration to microservices.
+This approach is suitable for complex components that have dependencies on other components or that require significant changes to the codebase.
+It involves identifying the dependencies between the components, extracting the code of the bounded context into a new microservice, and making
+the necessary changes to the codebase can function independently.
+
+#### Modular Monolith
+
+A **modular monolith** is an architectural pattern that allows you to structure your monolithic application in a way that resembles microservices,
+but without the overhead of managing multiple services. It involves organizing the codebase into modules, each representing a bounded context,
+and defining clear boundaries between the modules. This approach allows you to develop, test, and deploy each module independently, while still
+maintaining a single codebase.
+
+Michael Feathers defines an approach to [Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/),
+which defines _seams_, a place where you can change the behavior of a program without having to edit the existing behavior. Basically, you define
+a seam around the piece of code you want to change, then swapping it in after the change is complete. However, this technique does not
+follow DDD principles; it still provides a valuable way to untangle the codebase and prepare it for the migration to microservices.
+
+#### Small Rewrites
+
+This approach allows you to gradually
+migrate the codebase to microservices, while still maintaining a single codebase. It involves
+identifying the bounded context, extracting the code of the bounded context into a new microservice, step by step, and making the necessary
+changes to the codebase to ensure that the new microservices function properly.
+
+In practice, teams tend to start from scratch after identifying the piece of code to migrate. Which could generate the same problems of
+the monolith or bring new ones, such as duplicating code or introducing inconsistencies in the codebase. Teams should be careful and disciplined
+to ensure that the new microservice is well designed and follows the principles of DDD.
+
+### Pattern: Strangler Fig Application
+
+The **Strangler Fig Application** pattern is a technique for gradually migrating a monolithic application to microservices by
+replacing parts of the monolith with new microservices over time. The name comes from the strangler fig tree, which grows around an
+existing tree and eventually replaces it. The pattern was introduced by Martin Fowler in his article
+[Strangler Fig Application](https://martinfowler.com/bliki/StranglerFigApplication.html).
+
+The pattern involves creating a new system that is supported by and wrapped around the existing monolith, allowing you to
+gradually replace parts of the monolith with new microservices. Both the old and new can coexist, allowing the new system to
+develop (or grow) and potentially replace the old system over time.
+
+Steps to implement the Strangler Fig Application pattern:
+
+1. **Identify the Bounded Contexts**: Identify the bounded contexts in the monolithic application that can be replaced with new microservices.
+2. **Create a New Microservice**: Create a new microservice for the bounded context you want to replace, using the same technology stack
+   as the monolith or a new one.
+3. **Route Requests**: Implement a routing mechanism that directs requests for the bounded context to the new microservice, while
+   still allowing the monolith to handle requests for the same context.
+4. **Gradually Replace**: Gradually replace the functionality of the bounded context in the monolith with the new microservice,
+   until the monolith no longer handles requests for that context.
+5. **Remove the Monolith Code**: Once the new microservice is fully functional and tested, remove the code for the bounded
+   context from the monolith, effectively replacing it with the new microservice.
+
+The following image illustrates the Strangler Fig Application pattern applied to the ClickCart monolithic application:
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_strangler_fig_pattern.png"
+    alt="Strangler Fig Pattern for ClickCart"
+    width="900"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Strangler Fig Pattern for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, you can see how the `Payment Management` is being replaced by a new microservice, while the `Order Management` context
+still interacts with the monolith. The `Notification Center` is still responsible for handling notifications and communication between the contexts, allowing the new microservice to
+send notifications without affecting the existing functionality.
+
+An important key factor is to be able to clearly map the inbound call to the asset that you want to move. Strangler Fig pattern does not
+work well when the functionality to be moved is deeper inside the existing monolith, such as a specific function or method.
+
+### Pattern: UI Composition
+
+The **UI Composition** pattern is a technique for gradually migrating the user interface of a monolithic application to microservices by
+replacing parts of the UI with new microservices over time. In this pattern, the UI is split into smaller widgets or components, each
+representing a bounded context and each widget is implemented as a separate microservice. Front-end frameworks like React, Angular, or Vue.js
+can be used to implement the UI components, allowing them to be developed and tested.
+
+A downside of this pattern is that it can lead to a fragmented user experience, as each widget may have its own design and behavior.
+To mitigate this, it is important to define a common design system and user experience guidelines that all widgets should follow.
+This ensures that the user interface remains consistent and cohesive, even as it is split into smaller components.
+
+This pattern is very useful when the monolithic application has a complex user interface that is tightly coupled with the backend logic,
+where a whole vertical slice of functionality can be migrated.
+In the case of ClickCart, we can apply the UI Composition pattern to the `Order Management Context`, which is responsible for displaying
+the last 10 orders of the user.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_ui_composition.png"
+    alt="UI Composition Pattern for ClickCart"
+    width="1000"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    UI Composition Pattern for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, you can see how the `Order Module` responsible for providing transformed into a separate microservice,
+`Service Order Module`, while the rest of the UI remains in the monolith.
+
+### Pattern: Branch by Abstraction
+
+**Branch by Abstraction** is a pattern used to migrate or extract functionality that is deeper inside the existing monolith, such as a specific
+function or method, by creating an abstraction layer that allows both the old and new implementations to coexist. Changes could be significant,
+but little disruptive to other developers working on the codebase at the same time. For an effective use of this pattern, it is important to work
+quickly and iteratively, so that the new implementation can be tested and validated before being fully integrated into the codebase. Work in
+separate branches, and use feature flags to control the visibility of the new implementation.
+
+If a migration takes too long to merge into the main branch, it can lead to merge conflicts and make it difficult to
+integrate the new implementation into the codebase. This can result in a situation where the new implementation is not fully functional or tested,
+and the old implementation is still being used.
+
+Steps to implement the Branch by Abstraction pattern:
+
+1. Create an abstraction for the functionality you want to migrate, such as an interface or an abstract class.
+2. Change clients of the existing functionality to use the new abstraction.
+3. Create a new implementation of the abstraction that represents the new functionality you want to migrate. This implementation
+   can be a new microservice or a new module in the monolith.
+4. Switch over the abstraction to use the new implementation. Use feature flags to control the visibility of the new implementation.
+5. Clean up the abstraction if necessary, and remove the old implementation.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_branch_by_abstraction.png"
+    alt="Branch by Abstraction Pattern for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Branch by Abstraction Pattern for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, you can see how the `Notification Center` is being migrated to a new microservice, `New Notification Center`, by
+creating an abstraction layer, `<<interface>> Notification Center`, that allows both the old and new implementations to coexist. In this case,
+the abstraction is an `interface` that defines the methods that the `Notification Center` should implement.
+
+The definition of a feature flag is a key factor in this pattern, as it allows you to control the visibility of the new implementation and
+to test it before fully integrating it into the codebase.
+
+Lastly, the pattern assume that you have access and control over the codebase, which is not always the case in a monolithic application.
+
+### Pattern: Parallel Run
+
+With the **Parallel Run** pattern, you can run _both_ the old and new implementations of a functionality in parallel, allowing you to
+test the new implementation while still using the old one. This pattern is useful when you want to compare the results to ensure they
+are consistent, or when you want to gradually migrate users to the new implementation without disrupting the existing functionality.
+
+Despite calling both implementations, only one is considered the _source of truth_. Typically, the old implementation is considered the
+source of truth until the ongoing verification reveals that the new implementation is working correctly and can be
+considered the source of truth.
+
+Consider this pattern when the implementation to migrate is on high-risk or has a significant impact on the system,
+such as a payment processing or order management system. The complexity of implementing it sometimes outweighs, so it is
+important to evaluate the trade-offs before applying this pattern.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_parallel_run.png"
+    alt="Parallel Run Pattern for ClickCart"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Parallel Run Pattern for ClickCart
+  </figcaption>
+</figure>
+
+The figure above illustrates how to implement the Parallel Run pattern for the ClickCart application, where both the old and new
+implementations are running in parallel. There is a `New Payment Gateway` that stores and sends results to a `Daily Comparison Batch Process` where the performance
+issues and errors are inspected every day.
+
+### Pattern: Decorating Collaborator
+
+The **Decorating Collaborator** is a technique that allows you to trigger some behavior based on some condition happening inside the monolith,
+but without changing the existing code. This pattern is useful when you want to add new functionality to an existing component
+without modifying the existing code, or when you want to add new functionality to a component that is
+not under your control, such as a third-party library or an external API.
+
+This pattern uses a decorator to make it appear that the monolith is still calling the original component, while in reality
+the decorator intercepts the calls and adding new functionality. The decorator can be implemented as a separate microservice,
+or as a module in the monolith, depending on the complexity of the functionality to be added.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_decorating_collaborator.png"
+    alt="Decorating Collaborator Pattern for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Decorating Collaborator Pattern for ClickCart
+  </figcaption>
+</figure>
+
+When an order is placed successfully, the `Proxy` calls out the `Notification Center` to send a notification to the user.
+The `Proxy` is a decorator that intercepts the calls to the `Notification Center` and adds new functionality, such as logging or
+sending notifications to other systems.
+
+In the Strangler Fig pattern, a proxy microservice can also be used to route requests to the new microservice. In that case, it is
+fairly simplistic, as it only needs to route the requests. Now the proxy is having to embody significantly more complex logic. It
+needs to make its own calls out to the new microservice and tunnel responses back to the customer. Keep an eye on the complexity
+that sits in the proxy.
+
+This pattern works best where the required information can be extracted from the inbound request, or the response back from the
+monolith. Where more information is needed for the right calls to be made to the new microservice, the more complex and tangled
+this implementation ends up being.
+
+### Pattern: Change Data Capture
+
+With the **Change Data Capture** pattern, rather than trying to intercept and act on calls made into the monolith, you react to
+changes in the data that the monolith is using. This pattern is useful when you want to extract data from the monolith and
+use it in a new microservice, or when you want to trigger some behavior based on changes in the data that the monolith is using.
+
+There are different ways to implement this pattern, such as using database triggers, transaction log pollers and
+batch delta copies.
+
+#### Database Triggers
+
+A **database trigger** is a piece of code that is executed automatically in response to certain events on a particular table or view.
+Triggers can be used to capture changes in the data and send them to a new microservice, allowing you to react to changes in the data without
+modifying the existing code in the monolith. Try to avoid the temptation to use triggers to implement business logic, as they can
+lead to complex and hard-to-maintain code. Instead, use them to capture changes in the data and send them to a new microservice.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_database_triggers.png"
+    alt="Database Triggers for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database Triggers for ClickCart
+  </figcaption>
+</figure>
+
+After a notification is created in the table `notification_events`, the database trigger is executed and sends an email action to the
+`New Notification Center` microservice.
+
+#### Transaction Log Pollers
+
+A **transaction log poller** is a technique that involves reading the transaction logs of the database to capture changes in the data.
+These logs contain all the records of changes made to the database, including inserts, updates, and deletes. To fully implement this pattern,
+you need to have access to the transaction logs of the database, which may not be possible in all cases, especially if the database
+is managed by a third-party service. Depending on the database engine, you can use different tools to read the transaction logs,
+such as [Debezium](https://debezium.io/), [Maxwell's Daemon](https://maxwells-daemon.io/), or custom scripts.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_transaction_log_pollers.png"
+    alt="Transaction Log Pollers for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Transaction Log Pollers for ClickCart
+  </figcaption>
+</figure>
+
+This approach is the neatest solution for implementing change data capture, as it allows you to capture changes in the data without
+modifying the existing code in the monolith. It also allows you to capture changes in the data in real-time, which can be useful for
+triggering actions in the new microservice as soon as the data changes.
+
+#### Batch Delta Copies
+
+A **batch delta copy** is a technique that involves periodically copying the data from the monolith to a new microservice, capturing
+the changes made to the data since the last copy. The program could run on a regular basis as a scheduled job. The jobs are usually run
+by tools like `cron`. The main drawback of this approach is working out what data has changed since the batch was last run, which can
+be complex and error-prone, especially if the data is large or if there are many changes made to the data. This approach is suitable for
+cases where real-time updates are not required, and where the data can be copied in batches without affecting the performance of the monolith.
+
+In general, change data capture is useful for general-purpose data extraction, where you want to extract data from the monolith
+and use it in a new microservice, or when you want to trigger some behavior based on changes in the data that the monolith is using.
+It is not suitable for cases where real-time updates are required, or where the data is large or complex. If you understand the potential
+trade-offs and limitations of this pattern, it can be a powerful tool for extracting data.
+
+## Split the Database
+
+When splitting the monolithic application into microservices, it is also necessary to split the database to ensure that each microservice
+has its own data store. This is a crucial step in the migration process, as it allows each microservice to be developed, deployed, and scaled independently,
+without being affected by the changes made to the other microservices. There are several patterns and techniques that can be used to split the database,
+depending on the complexity of the monolith and the dependencies between the components.
+
+### Pattern: Shared Database
+
+The **Shared Database** pattern is a technique where multiple microservices share a single database. This approach is suitable for
+small applications or when the microservices are tightly coupled and need to access the same data. However, it can lead to
+tight coupling between the microservices and makes it difficult to scale them individually. It also makes it harder to
+manage the database schema, as changes made by one microservice can affect the other microservices that share the same database.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_shared_database.png"
+    alt="Shared Database for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Shared Database for ClickCart
+  </figcaption>
+</figure>
+
+Another issue is that it becomes unclear as to who "controls" the data. In the above figure, seven services can directly change order
+information, which can lead to inconsistencies and data integrity issues.
+
+This approach could be beneficial when considering read-only static reference data, for instance, a schema holding country currency
+code information, postal code or zip code lookup tables. Another possible use case would be a service directly exposing a
+database as a defined endpoint designed and managed to handle multiple consumers, such as a database as a service interface.
+
+### Pattern: Database View
+
+The **Database View** pattern is a technique where a database view is used to expose a subset of the data from a shared database to
+a microservice. This _view_ can be used to filter, aggregate, or transform the data before it is exposed to the microservice. The
+ability of a view to project a limited subset of information from the underlying source allows one to implement a form of information hiding,
+helpful in protecting sensitive data or for exposing only the data that is relevant to the microservice.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_database_view.png"
+    alt="Database View for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database View for ClickCart
+  </figcaption>
+</figure>
+
+Avoid this pattern if your goal is to expose this information via a service interface, as it can lead to tight coupling between the
+microservices and the database. Instead, it's better to use a proper schema decomposition strategy.
+
+### Pattern: Database Wrapping Service
+
+The **Database Wrapping Service** pattern is a technique where a microservice acts as a wrapper around a shared database, providing
+a service interface to access the data. In this approach, the database is hidden behind a service that acts as a thin wrapper,
+moving database dependencies to become service dependencies. This allows the microservice to access the data without
+directly accessing the database.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_database_wrapping_service.png"
+    alt="Database Wrapping Service for ClickCart"
+    width="800"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database Wrapping Service for ClickCart
+  </figcaption>
+</figure>
+
+On the figure above, you can see how a new service `Platform` is created and all the direct communications to the database are
+replaced with calls to the `Platform` service. This service acts as a wrapper around the shared database, providing a service interface
+to access the data. The `Platform` service can also implement additional functionality, such as caching, logging, or security, to enhance the
+performance and reliability.
+
+The pattern works very well where the underlying schema is just too hard to consider pulling apart. By placing an explicit wrapper around
+the schema, and making it clear that the data can be accessed only through that schema, it allows you to choose database growing strategy and
+control further changes.
+
+Compared to database views, this pattern allows you to map any existing structure in your schema, write code in the microservice to
+present more sophisticated data structures, and provides write capabilities through API calls. However,
+the solution proposed here is a workaround for the underlying problem, which is to break apart the database schema.
+
+### Pattern: Database as a Service Interface
+
+There are times when a client needs a database to query. This might be because they need to fetch large amount of data, or perhaps because
+external parties are already using tool chains that require a SQL endpoint to work against, such as a BI tool or a reporting system.
+In these situations, allowing clients to view data that your service manages in a database can make sense, but it is important to
+ensure that the data is exposed in a controlled and secure manner. The **Database as a Service Interface** pattern is a technique
+where a microservice exposes a database as a service interface, allowing clients to query the data directly.
+
+To properly implement this pattern you can either use a data capture system that generate up-to-date views of the data, or a
+batch process that periodically copies the data from the monolith database to an external database as an endpoint. Another possible
+option is to listen to events fired from the service, and use that to update the external database.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_database_as_a_service_interface.png"
+    alt="Database as a Service Interface for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database as a Service Interface for ClickCart
+  </figcaption>
+</figure>
+
+The above figure illustrates how to expose a dedicated database as an endpoint `External DB`, allowing the internal database
+`Internal Notification DB` to remain hidden from the consumers.
+
+The mapping engine is a key component of this pattern, because when the internal structure of the database change, he mapping engine
+must also change, to ensure that the public facing database remains consistent. In multiple cases, the mapping engine
+will lag behind writes made to the internal database, which can lead to inconsistencies in the data exposed to the consumers.
+
+The majority of use cases for this technique are around read-only static reference data, for instance, reporting systems, BI tools,
+or external parties that need to query large amount of data directly.
+
+### Data ownership
+
+Until this point, we have not tackled the underlying problem: pulling data out of a giant monolithic database. To handle the problem
+in depth, we need to consider the ownership of the data and how it is managed across the microservices.
+
+There are two approaches to data ownership in microservices: use one or more aggregates to move the management of the state and
+associated data into the microservice's own schema. Other possibility would be to change the ownership of the data to another microservice,
+which can be useful when the data is shared between multiple microservices or when the data is not directly related to the microservice's
+business logic.
+
+#### Pattern: Aggregate Exposing Monolith
+
+**Aggregate Exposing Monolith** enables the possibility to make explicit what information the microservice needs. The monolith
+still "owns" the concept of what is and isn't an allowable change in state, but an aggregate exposing monolith is not just a wrapper
+around the database.
+
+In the figure below, we are exposing information from the monolith via a proper service interface, allowing the new microservice
+to access the data without directly accessing the database. The microservice can then use this information to
+implement its own business logic and functionality, while still relying on the monolith to manage the state and associated data.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_aggregate_exposing_monolith.png"
+    alt="Database as a Service Interface for ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database as a Service Interface for ClickCart
+  </figcaption>
+</figure>
+
+By explicitly exposing the information needed in a well-defined interface, this is the first step to potentially discover
+future service boundaries. In the above figure, a good next step would be to create an `User Service`. Doing the procedure of
+exposing API for user-related data we already have a good idea of what the service should look like, and what the boundaries
+are. If we want to go further, we can start to extract the user-related data from the monolith and create a new microservice.
+
+This pattern works well to allow your new service the access to the data they need. When extracting services, having the new service call
+back to the monolith via the API to access the data it needs is likely little more work than directly accessing the database of the monolith,
+but in the long run it will pay off, as it allows you to
+gradually migrate the data to the new microservice, while still relying on the monolith to manage the state and associated data.
+
+#### Pattern: Change Data Ownership
+
+There is an opportunity to apply the **Change Data Ownership** when data that is currently in the monolith should be under the
+control of a new microservice. In the following figure, we can see how the `User Service` is taking ownership of the user-related data,
+allowing it to manage the state and associated data independently from the monolith.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_change_data_ownership.png"
+    alt="Change Data Ownership for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Change Data Ownership for ClickCart
+  </figcaption>
+</figure>
+
+Untangling the `User` data from the existing monolith database can be a complex task, because most likely, foreign keys need to be
+removed, and the data needs to be migrated to the new microservice's database. If the monolith only needs read-only access
+to `User`-related data, it can be done by projecting a view from the `User` service's database.
+
+### Data Synchronization
+
+When splitting the database, it is important to ensure that the data is synchronized between the microservices. There are several
+patterns and techniques that can be used to synchronize the data, depending on the complexity of the monolith and the dependencies
+between the components.
+
+### Pattern: Synchronize Data in Application
+
+Switching data from one location to another is not a simple task, and it can be complex and error-prone, especially if the data is large or
+if there are many changes made to the data. The **Synchronize Data in Application** pattern is a technique where the data is synchronized
+between the microservices in the application code, rather than in the database. This approach allows you to
+control and ensure consistency that the data is consistent across the microservices, without relying on the database to manage the synchronization.
+
+There are several ways to implement this pattern, such as using a message broker, a distributed cache, or a custom synchronization mechanism.
+Below is a simple example using the following steps:
+
+1. Bulk Synchronize Data:
+
+   The first step is to provide to the new database with the data it needs to operate. This can be done using a bulk
+   data synchronization process, where the data is copied from the monolith database (`Monolith DB`) to the new target database, `User DB`.
+
+   If during the process of bulk synchronization the data is not totally in sync because new data is being added to the monolith database,
+   you can use a delta synchronization process to ensure that the new data is also copied to the new database. This can be seen in the right
+   side of the figure, where the `User DB` is being updated with the new data from the `Monolith DB`.
+
+2. Synchronize on Write/Read in Old Schema:
+
+   The next step is to ensure that the data is synchronized between the microservices on write and read operations but only for the monolith
+   database `Monolith DB`. The new database `User DB` is used for writes only operations.
+
+3. Synchronize on Write/Read in New Schema:
+
+   In this stage the reads performed by the new database are working correctly, and the writes are still being performed in the old schema.
+   In this last step, the writes are being performed in the new schema, and the data is synchronized between the microservices.
+
+All the steps above are illustrated in the sequence of figures below, each step showing the state of the data synchronization process.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_synchronize_data.png"
+    alt="Synchronize Data for ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Synchronize Data for ClickCart
+  </figcaption>
+</figure>
+
+This pattern makes a lot of sense if you want to split the schema _before_ splitting put the application code.
+
+You could use this pattern when you have a monolithic and a microservice accessing the data, but this becomes very complex to handle
+as the number of microservices increases. Both systems need to be aware of the data changes, and the synchronization process
+needs to be implemented in the application code, which can lead to complex and hard-to-maintain code. This problem can be mitigated
+if you can be sure that either the `User Service` is performing the writes or the monolith's `User` functionality is performing the writes.
+This can be accomplished using the Strangler Fig during switchover.
+
+### Pattern: Tracer Write
+
+The **Tracer Write** pattern consists of moving the source of truth for the data in an incremental fashion, tolerating that there could be
+two sources of truth during the migration process. Before the release, the monolith is the source of truth. After the release,
+the new microservice is the source of truth.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-1/click_cart_tracer_write.png"
+    alt="Tracer Write for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Tracer Write for ClickCart
+  </figcaption>
+</figure>
+
+One way to implement this pattern is to start with a small set of data being synchronized and increase this over time, while also
+increasing the number of consumers of the new source of data. You can see this process in the figure above, where the `New Source of Truth`
+is taking ownership of data like `Basic user` in an incremental fashion, while the `Monolith` is still the source of truth for the data.
+
+The biggest challenge with this pattern is to ensure that the data is consistent between the two sources of truth, and that
+the consumers are aware of the changes being made to the data. Some actions can be taken to mitigate this, such as:
+
+- **Write to one source**: All the writes are sent to one of the sources of truth. Data is synchronized to the other source of truth
+  after the write occurs.
+- **Send writes to both sources**: All write requests made by upstream clients are sent to both sources of truth.
+- **Seed writes to either source**: Clients send write requests to the source of truth, and behind the scenes the data is
+  synchronized in a two-way fashion between the systems.
+
+Use this pattern instead of two-way synchronization, because it allows you to gradually migrate the data to the new microservice,
+while still relying on the monolith to manage the state and associated data. It is also important to be aware that inconsistencies
+can occur during the migration process, and that additional effort is needed to ensure that the data is consistent between the two
+sources of truth.
+
+As a summary, we have explored several patterns and techniques for splitting a monolithic application into microservices, including
+**Strangler Fig**, **UI Composition**, **Branch by Abstraction**, **Parallel Run**, **Decorating Collaborator**, **Change Data Capture**,
+and **Database Splitting**. We also discussed how to handle data ownership and synchronization, using patterns such as
+**Aggregate Exposing Monolith**, **Change Data Ownership**, **Synchronize Data in Application**, and **Tracer Write**.
+
+This is the end of the first part of the series. In the next part, we will continue exploring
+splitting the database, how transactions are handled and why sagas could be helpful.
+You can find the next part of the series [here](/posts/road-to-microservices-part-2).

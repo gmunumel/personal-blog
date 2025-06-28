@@ -35,10 +35,14 @@ const TableOfContents = () => {
         {headings
           .filter((h) => h.id)
           .map((h) => (
-            <li key={h.id} style={{ marginLeft: `${(h.level - 1) * 16}px` }}>
+            <li
+              key={h.id}
+              style={{ marginLeft: `${(h.level - 1) * 16}px` }}
+              className="cursor-pointer rounded"
+            >
               <a
                 href={`#${h.id}`}
-                className="text-blue-600 dark:text-blue-500 hover:underline text-sm"
+                className="block w-full h-full px-2 py-1 text-blue-600 dark:text-blue-500 hover:underline text-sm rounded"
               >
                 {h.text}
               </a>

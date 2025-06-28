@@ -13,7 +13,7 @@ const NavBar = () => {
     }`;
 
   return (
-    <nav className="w-full px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 gap-y-2 items-center">
+    <nav className="w-full px-4 py-4 h-16 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 gap-y-2 items-center">
       <Link href="/" className="flex items-center gap-2">
         <Image
           src="/favicon-192x192.png"

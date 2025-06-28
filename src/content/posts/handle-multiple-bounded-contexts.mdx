@@ -33,24 +33,24 @@ A bounded context can be thought of as a specific area of the system where a par
 <figure className="flex flex-col items-center w-full">
   <img
     src="/handle-multiple-bounded-contexts/bounded_contexts.png"
-    alt="Two Contexts with a common Entity"
+    alt="Two Contexts with a common Aggregate"
     width="600"
     className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
   />
   <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Two Contexts with a common Entity
+    Two Contexts with a common Aggregate
   </figcaption>
 </figure>
 
 The figure above illustrates two contexts, each with its own model.
-However, they share a common entity, which can lead to challenges in maintaining consistency
-and communication between the contexts. For _Finance Context_, the `Account` entity might represent a bank account with specific attributes and behaviors,
-while for _Human Resources Context_, the same `Account` entity might represent an employee account with different
+However, they share a common aggregate, which can lead to challenges in maintaining consistency
+and communication between the contexts. For _Finance Context_, the `Account` aggregate might represent a bank account with specific attributes and behaviors,
+while for _Human Resources Context_, the same `Account` aggregate might represent an employee account with different
 attributes and behaviors.
 
 If we scale this up to a larger system, we might have multiple bounded contexts,
 each with its own model, but sharing common entities or concepts. According
-to [Marting Fowler](https://martinfowler.com/bliki/BoundedContext.html): try to do a total unification of these models will not be feasible or cost-effective, which could lead to a monolithic architecture.
+to [Martin Fowler](https://martinfowler.com/bliki/BoundedContext.html): try to do a total unification of these models will not be feasible or cost-effective, which could lead to a monolithic architecture.
 
 So, how can we handle multiple bounded contexts in Python while ensuring clear
 boundaries and effective communication?
@@ -89,7 +89,7 @@ However, it can also lead to duplication of code and data, which can increase co
 </figure>
 
 In the example of the _Finance Context_ and _Human Resources Context_, we could have two separate `Account` entities, each with its own attributes and behaviors.
-In Python the name of the entity can be the same, but they will be defined in different modules or classes.
+In Python the name of the aggregate can be the same, but they will be defined in different modules or classes.
 
 ```python
 # src/application/domain/model/finance/account.py
@@ -150,14 +150,14 @@ hr_account = HRAccount(employee_id="67890", salary=3000)
 ```
 
 The implementation above imports the `Account` class from both contexts and uses aliases to differentiate them.
-This approach allows you to maintain clear boundaries between the contexts while still being able to use the same name for the entity.
+This approach allows you to maintain clear boundaries between the contexts while still being able to use the same name for the aggregate.
 
 Both models are _locally related_ but serve different purposes in their respective contexts.
 
 ## Context Map
 
 A **context map** is a way to define the relationships between different bounded contexts and how they communicate with each other.
-It provides a clear separation between different parts of the system, allowing each part to develop individualy while still being able to communicate effectively.
+It provides a clear separation between different parts of the system, allowing each part to develop individually while still being able to communicate effectively.
 Result would be a coherent dialect of the **Ubiquitous Language** across the system.
 
 Steps to implement a context map:
@@ -225,7 +225,7 @@ allowing them to share a common understanding of the entities and concepts used 
 model, which is the shared kernel.
 
 The following figure illustrates a shared kernel that contains common entities and concepts used by both the _Finance Context_ and _Human Resources Context_,
-in this case the `Record` entity in _Monitor Context_.
+in this case the `Record` aggregate in _Monitor Context_.
 
 <figure className="flex flex-col items-center w-full">
   <img
@@ -239,7 +239,7 @@ in this case the `Record` entity in _Monitor Context_.
   </figcaption>
 </figure>
 
-Following the example of the _Finance Context_ and _Human Resources Context_, we can define a `Record` entity in a shared kernel that both contexts can use.
+Following the example of the _Finance Context_ and _Human Resources Context_, we can define a `Record` aggregate in a shared kernel that both contexts can use.
 
 ```python
 # no-run
@@ -257,14 +257,14 @@ record.display()
 ```
 
 The code above defines a `Record` class in the shared kernel that can be used by both the _Finance Context_ and _Human Resources Context_.
-This allows both contexts to share a common understanding of the `Record` entity.
+This allows both contexts to share a common understanding of the `Record` aggregate.
 
 A shared kernel is often the **Core Domain** of the system, where both teams have to work together to maintain it.
 
 ## Separate Context
 
 Another approach to handling multiple bounded contexts is to implement a separate context for shared entities. In this case, the shared
-entity does not belong to any specific bounded context, but rather exists in its own context. We should promote it to its own bounded
+aggregate does not belong to any specific bounded context, but rather exists in its own context. We should promote it to its own bounded
 context and treat others as consumers of its API or events.
 
 <figure className="flex flex-col items-center w-full">
@@ -279,7 +279,7 @@ context and treat others as consumers of its API or events.
   </figcaption>
 </figure>
 
-In the example of the _Finance Context_ and _Human Resources Context_, we could have a separate context for the `Account` entity that both contexts can use _Account Management Context_.
+In the example of the _Finance Context_ and _Human Resources Context_, we could have a separate context for the `Account` aggregate that both contexts can use _Account Management Context_.
 They communicate with this context through its API or events, allowing them to remain loosely coupled.
 
 ```python
@@ -597,7 +597,7 @@ changes:
 
 In the following implementation I will assume that the _Human Resources Context_ is responsible for creating the account,
 and the _Finance Context_ is responsible for handling the account balance. 
-The aggregate root will be the `Account` entity in the _Human Resources Context_.
+The aggregate root will be the `Account` aggregate in the _Human Resources Context_.
 
 ```python
 # no-run

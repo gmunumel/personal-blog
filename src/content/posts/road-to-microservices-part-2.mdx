@@ -1,0 +1,604 @@
+---
+title: Road to Microservices - Part 2
+tags:
+  - microservices
+  - architecture
+  - monolith
+synopsis: >
+  This article explores the journey from monolithic applications to microservices, discussing the challenges, patterns, and best practices involved in this architectural shift.
+date: 2024-12-19
+---
+
+# Road to Microservices - Part 2
+
+This is the second part of the series on transitioning from monolithic applications to microservices.
+
+In this article, we will delve deeper into the challenges faced during this transition,
+explore various patterns and practices, and provide insights into how to effectively manage this architectural shift.
+The first part of the series can be found [here](/posts/road-to-microservices-part-2-part-1).
+
+We will continue our journey with the ClickCart application, which was introduced in the first part of the series.
+Specifically, we will focus on how to split the database, manage transactions, and handle sagas effectively.
+
+### Split Apart the Database
+
+When splitting the database, it is important to ensure that the data is split apart in a way that allows each microservice to
+manage its own data store independently, without being affected by the changes made to the other microservices.
+
+It is important to mention that the database term could refer to a single database engine or a logical database schema.
+A logical database schema can use a separate database engine giving a physical separation too. The figure below illustrates a single
+and logical separation of the database for the ClickCart application, where each microservice has its own database engine
+and schema. On top of the figure, there is a single database engine that hosts multiple schemas, and each microservice has its own schema
+in the database engine. At the bottom of the figure, there is a logical separation of the database, where each microservice has its own
+database engine and schema separated.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_physical_logical_database.png"
+    alt="Physical and Logical Database Separation for ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Physical and Logical Database Separation for ClickCart
+  </figcaption>
+</figure>
+
+Logical separation is less common, most of the time, one database engine hosts multiple schemas, and each microservice has its own schema
+in the database engine.
+
+A special consideration is required by databases views, where both the source database and the schemas hosting the views may need to be located
+on the same database engine.
+
+#### Split the Database First, or Code First?
+
+Before jumping to decompose the database, it is important to mention the order of the split. There are two main approaches: split
+the database first or split the code first
+
+#### Split Database First
+
+The **Split Database First** approach is a technique where the database is the main focus of the migration process, and the code is
+split after the database is split. While before all the information was together in a single `SELECT` statement, now you
+need to pull data back from two locations and join them in memory. Also, end up breaking transactional integrity when move data across
+two schemas, which could have significant impact on the application. In general, this approach is unlikely to yield much short-term benefit,
+and it is not recommended to split the database first, as it can lead to complex and hard-to-maintain code. Instead, it is better to
+focus on splitting the code first, and then split the database.
+
+There are options to proceed with the split database first approach, such as: repository per bounded context, and
+database per bounded context. These patterns allow you to split the database into smaller, more manageable pieces, while still
+maintaining the integrity of the data and the relationships between the components.
+
+##### Pattern: Repository per Bounded Context
+
+The **Repository per Bounded Context** pattern is a common practice in DDD, where a _repository_ is created for each bounded context
+in the application. Tools like [SQLAlchemy](https://www.sqlalchemy.org/) for Python, or [Hibernate](https://hibernate.org/) for Java, provide
+a way to create repositories that can be used to access the data in the database. Making it easy to map objects or data structures to and
+from the database, rather than having a single repository layer for all the data access concerns.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_repository_per_bounded_context.png"
+    alt="Repository per Bounded Context for ClickCart"
+    width="800"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Repository per Bounded Context for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, each repository abstracts access to the service’s portion of the schema.
+All the repositories are using the same database.
+
+When having multiple tables and their relationships are difficult to visualize an interesting tool to use
+is [SchemaSpy](http://schemaspy.org/). SchemaSpy generates graphical representations of the database schema,
+showing the relationships between the tables and the columns, making it easier to understand the structure of the database.
+This can be particularly useful when trying to identify the boundaries between the bounded contexts and the
+repositories that need to be created.
+
+This pattern is really effective in a situation where you need to rework the monolith in order to better understand how to split it apart.
+Breaking down repository layers according to domain boundaries will go a long way to helping understand where the
+seams for microservice boundaries are, and how to split the code apart.
+
+##### Pattern: Database per Bounded Context
+
+For **Database per Bounded Context** pattern, each bounded context has its own database, allowing each microservice to manage its own data store
+independently, without being affected by the changes made to the other microservices.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_database_per_bounded_context.png"
+    alt="Database per Bounded Context for ClickCart"
+    width="800"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database per Bounded Context for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, each service has its own database, which is responsible for managing the data in the bounded context.
+
+This pattern is very effective for building brand-new systems, because it allows you to start with a clean slate and
+design the database schema from scratch, without being affected by the existing monolithic database. If you are not clear about the business
+domain and the boundaries between the bounded contexts, or if your business might change in the future, this pattern is not recommended,
+as it can lead to complex and hard-to-maintain code. Instead, it is better to focus on splitting the code first, and then split the database.
+
+#### Split Code First
+
+In general, teams split the code first, and then split the database. They might get the short-term improvement from the new microservice, which
+gives some boost to complete the decomposition by separating out the database.
+
+By splitting the code first it is easier to identify and understand the boundaries between the bounded context, what data is needed by each microservice,
+and how the data is managed across the microservices. Also there is the benefit of having a code artifact earlier that can be deployed and
+test it in production. However, it is common to see teams that only split the code and leave the database as a shared resource, leading to tight
+coupling that undermines the benefits of microservices.
+
+Below are some patterns that can be used to split the code first, and then split the database. These patterns are: monolith as data
+access layer, and multi-schema storage.
+
+##### Pattern: Monolith as Data Access Layer
+
+The pattern **Monolith as Data Access Layer** is the same technique as the pattern <a href="#pattern-aggregate-exposing-monolith">Aggregate Exposing Monolith</a>,
+where the monolith is used as a data access layer for the new microservice. The importance is to where use it, this pattern works best when
+the code managing this data is still in the monolith, and the new microservice is only responsible for exposing the data to the consumers.
+If the data in the monolith's database should really be "owned" by the microservice instead, this is not the right pattern to use, instead,
+try to split the data out.
+
+##### Pattern: Multi-schema Storage
+
+The **Multi-schema Storage** pattern decoupling the
+database schema from the monolith's database, and allowing the new microservice to manage its own data store independently,
+without being affected by the changes made to the other microservices. In this way the problem of having a shared database is mitigated, as
+the new microservice has its own schema to store the data.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_multi_schema_storage.png"
+    alt="Multi-schema Storage for ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Multi-schema Storage for ClickCart
+  </figcaption>
+</figure>
+
+The figure above illustrates how new data is being stored in a new schema, `User Management Schema`, but still accesses old data directly in the
+monolith.
+
+Consider that pulling out data from a monolith database will take time, and might not be a one-step process. However, this pattern works
+well when adding brand-new functionality to microservices that requires storage. It's clearly data that is not needed by the monolith.
+
+##### Considerations
+
+As a final words regarding if split the database first or code first, take this into consideration:
+
+- If you have control over the monolith and performance and consistency is a concern, then split the schema first.
+- Otherwise, split the code first, which will give you a better understanding of the business domain and the boundaries between
+  the bounded contexts, and make it easier to migrate the database later on.
+
+### Pattern: Split Table
+
+There are some cases where you need to split a table into multiple tables, either because the table is too large or because
+the table has too many columns that are not used by all the microservices. In these cases, you can use the **Split Table** pattern,
+which allows you to split a table into multiple tables, each with its own schema, and manage the data independently.
+
+The following figure illustrates how to split one table `users` into two tables, `users` and `orders`. Table `users` contains
+data that is specific for an order like `Order_Level`.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_split_table.png"
+    alt="Split Table for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Split Table for ClickCart
+  </figcaption>
+</figure>
+
+Instead of creating a new table another solution would be create a foreign key relationship between the two tables,
+where the `users` table has a foreign key to the `orders` table, and the `orders` table has a foreign key to the `users` table.
+This is not ideal because it creates a tight coupling between the two tables, and makes the operation difficult to split one database into
+two separate databases. The example is straightforward, but in practice, there is also another case, when two services
+need to access the same table, and the same column, as it is illustrated in the figure below.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_split_table_same_column.png"
+    alt="Split Table with same column Key for ClickCart"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Split Table with same column for ClickCart
+  </figcaption>
+</figure>
+
+For the services `User Management` and `Notification Center`, the column `status` is a shared column, for `User Management` it is a column
+that indicates the status of the user, and for `Notification Center` it is a column that indicates the status of the notification.
+In this case, it is better to review the domain model to identify to which bounded context the column `status` belongs. In this case,
+the column `status` belongs to the `User Management` bounded context, and the `Notification Center` bounded context should only access the data
+through the `User Management` service, which is responsible for managing the data in the `users` table.
+
+### Pattern: Move Foreign-key Relationship
+
+There is a scenario when the split of the database is complex because of the foreign-key relationships between the tables.
+In this case, you can use the **Move Foreign-key Relationship** pattern, which allows you to move the foreign-key relationship
+from a database operation to a code query through corresponding microservices.
+
+The top of the next figure illustrates the scenario
+where a database join is performed between `products` and `orders` tables, the result is handled by `Order Management` service,
+because needs it for its operation. The bottom of the figure illustrates how to move the foreign-key relationship
+to different databases. First, the `Order Management` service does a query to obtain the `Order_ID`s list, with that list it can
+request the `Product Management` service to obtain the products related to those orders.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_move_foreign_key_relationship.png"
+    alt="Move Foreign-key Relationship for ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Move Foreign-key Relationship for ClickCart
+  </figcaption>
+</figure>
+
+Logically, the join operation is still happening, but it is now done inside the `Order Management` service, rather than in the database.
+Unfortunately, the performance of this approach is not as good as the database join, because it requires
+multiple round trips between the services, and it is not as efficient as a database join.
+
+### Data Consistency
+
+When splitting the database, it is important to ensure that the data is consistent between the microservices.
+This can be achieved by using different techniques, such as:
+
+- **Check before deletion**: Before deleting a record, check if it is being used by another microservice, and if so, prevent the deletion.
+- **Handle deletion gracefully**: When a record is deleted, handle the deletion gracefully by just displaying a message like
+  "This record has been deleted" or "This record is no longer available".
+  This way, the user is aware that the record has been deleted, but the application does not crash or throw an error.
+- **Don't allow deletion**: In some cases, it is better to not allow deletion of records, and instead mark them as deleted. Use a logical
+  soft delete, where the record is not physically deleted from the database, but instead marked as deleted.
+
+One of the best approaches would be to mix some options, such as: check before deletion, and handle deletion gracefully. This way, you
+can ensure that the data is consistent between the microservices, and the user is aware that the record has been deleted,
+but the application does not crash or throw an error.
+
+In the scenario of breaking a foreign-key relationship, one of the first things to ensure is that you are not breaking apart two things
+that should be together, such as a user and its orders. If you are breaking apart two things that should be together,
+you need to ensure that the data is consistent between the microservices, and honor domain boundaries in their bounded contexts.
+
+Next we will explore some patterns that can be used to ensure data consistency between the microservices.
+
+#### Pattern: Duplicate Static Reference
+
+Suppose that you have a static reference data such as list of countries, T-shirt sizes, or payment methods, that is used by
+multiple microservices and store multiple times in the database. The **Duplicate Static Reference** pattern allows you to persist
+the static reference data in multiple microservices, and ensure that the data is consistent between the microservices. This means
+to have a duplicate copy of the static reference data in each microservice that needs it. The challenge is to ensure that the
+data is consistent over time especially when the reference data changes unexpectedly.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_duplicate_static_reference.png"
+    alt="Duplicate Static Reference for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Duplicate Static Reference for ClickCart
+  </figcaption>
+</figure>
+
+The figure above illustrates how the static reference data of `country_codes` is duplicated in each microservice that needs it.
+Which could lead to inconsistency if the data changes in one microservice and not in the others.
+
+This pattern could be useful for large volumes of data, when it's not essential for all the microservices to see the extract
+same set of data, or when the data is not expected to change frequently.
+
+When the data is used only locally within each service, the inconsistency is not a problem. Because the bounded context
+of each service is different, and the data is not shared between the services. However, if the data is part of the communication
+between these services, then the inconsistency can lead to problems.
+
+Embracing duplication of static reference data should be done sparingly and only in few cases or when the data is not shared between the services.
+
+#### Pattern: Dedicated Reference Data
+
+Another approach to manage static reference data is to use a **Dedicated Reference Data** service, which is dedicated shared schema for
+reference data that is used by multiple microservices. It allows avoiding duplication of data, and ensures that the data is consistent
+across the microservices. The figure below is an example of how to use a dedicated reference data service for the ClickCart application.
+`Product Catalog` and `Order Management` services are using the same reference schema for `country_codes`.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_dedicated_reference_data.png"
+    alt="Dedicated Reference Data for ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Dedicated Reference Data for ClickCart
+  </figcaption>
+</figure>
+
+It is still possible to do join operations between the reference data and others schemas, the only condition is that they
+need to be located in the same database engine.
+
+This pattern is useful when the static reference data is used by multiple microservices
+and the data is expected to change frequently, or for a large volume of data that is not expected to change frequently.
+
+#### Pattern: Static Reference Data Library
+
+The **Static Reference Data Library** pattern is a variation of the **Duplicate Static Reference** pattern, where the static reference data
+is stored in a library that is shared by multiple microservices. The library must be statically linked by any microservice that
+wants to use the static reference data, and the data is not stored in the database.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_static_reference_data_library.png"
+    alt="Static Reference Data Library for ClickCart"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Static Reference Data Library for ClickCart
+  </figcaption>
+</figure>
+
+In the figure above, the Static Reference Library has been deployed as a shared library, and each microservice statically linked
+it to its codebase.
+
+One downside of this pattern is that multiple microservices with multiple technology stacks may not be able to share a single
+shared library. Also notice that multiple versions of the library can be deployed and be used in production at the same time, which
+can lead to inconsistencies.
+
+You can use this pattern for small volumes of data, or for relaxed microservices that tolerate different versions in production
+at the same time. It is extremely useful to have a full visibility of each version of the library that is being used by each microservice.
+
+#### Pattern: Static Reference Data Service
+
+Build a microservice that is responsible for managing the static reference data, and expose an API that can be used by other microservices
+to access the data. The pattern **Static Reference Data Service** just does that, it allows to have a single source of truth for the static reference data,
+and ensures that the data is consistent across the microservices. The figure below illustrates the newly created microservice `Country Codes`
+that is responsible for managing the static reference data for the ClickCart application.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_static_reference_data_service.png"
+    alt="Static Reference Data Service for ClickCart"
+    width="400"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Static Reference Data Service for ClickCart
+  </figcaption>
+</figure>
+
+This is a good fit for [Function-as-a-Service (FaaS)](https://en.wikipedia.org/wiki/Function_as_a_service) or Serverless architectures, where the static reference data is managed by a
+dedicated microservice, and the data is accessed through an API, that runs in a serverless environment.Platforms like AWS Lambda,
+Azure Functions, or Google Cloud Functions can be used.
+
+The latency might be higher than the other patterns, because it requires a network call to access the data. Also this approach is
+suitable for caching on the client side because at the end this data should not change frequently.
+
+Another possible way to implement is to fire update events to the consumers when a change is made to the static reference data,
+so that the consumers can update their local cache of the data.
+
+##### Considerations
+
+When to use any of the static reference data patterns? It depends on the use case, but in general, you can use the following guidelines:
+
+- If assume that the data does not need to be consistent across microservices all the time, then use the shared library pattern. Because
+  it makes more sense than duplicating this data in local services schemas, the data is simple and low in volume.
+- For large volumes of data, would be better to have duplicated copies of data in each service schema.
+- If data needs to be consistent across microservices, then create a dedicated service (or serve up the data as part of a larger-scoped
+  Static Reference Data Service).
+
+### Database Transactions
+
+**Database transactions** are a way to ensure that a series of database operations are executed as a single unit of work, and that either all
+the operations are executed successfully, or none of them are executed at all. The ability to make changes to the database in a transaction
+can make the systems much easier to reason about, and therefore easier to develop and maintain. We rely on the database to ensure the
+safety and consistency of the data, and to ensure that the data is not corrupted in case of a failure.
+
+To handle transactions in a microservices architecture, we need to ensure four basic properties, known as **ACID** properties:
+
+- **Atomicity**: The transaction is treated as a single unit of work, and either all the operations are executed successfully, or none of them are executed at all.
+- **Consistency**: The transaction ensures that the database is in a consistent state before and after the transaction is executed.
+- **Isolation**: The transaction is isolated from other transactions, and the changes made by the transaction are not visible to other transactions until the transaction is committed.
+- **Durability**: Once the transaction is committed, the changes made by the transaction are permanent.
+
+Usually transaction databases are bound to a single database, which for monolith applications is not a problem, but for microservices
+that are using different databases, it is not possible to use a single transaction to ensure the ACID properties across multiple databases.
+This is because each database has its own transaction management system. The next figure illustrates how the transaction is
+handled in a microservices architecture, where each microservice has its own database.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_database_transaction.png"
+    alt="Database Transaction for Microservice Architecture in ClickCart"
+    width="700"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Database Transaction for Microservice Architecture in ClickCart
+  </figcaption>
+</figure>
+
+`Shopping Cart` and `Order Management` services are using different databases, and the transactions are handled independently.
+When the status of the `Shopping Cart` is changed to `OK`, the `Order Management` service needs to remove the completed order for
+the `Product_ID` equal to **2**.
+
+The lack of atomicity can start to cause significant problems, especially when migrating systems that previously
+relied on this property.
+
+Let's explore a technique that can be used to handle transactions in a microservices architecture.
+
+#### Two-Phase Commit
+
+The **Two-Phase Commit** (2PC) protocol is a distributed transaction protocol that allows to ensure the
+ACID properties across multiple databases.
+
+It is a two-phase process that involves a coordinator and multiple participants.
+
+- **The coordinator**: It Is responsible for managing the transaction, and the participants are the microservices that are involved
+  in the transaction. The coordinator sends a prepare message to the participants, asking them to prepare for the transaction.
+- **The participants**: They are the microservices that are involved in the transaction, and they are responsible for executing the operations
+  and reporting the outcome to the coordinator.
+
+It's a quick process to inject huge amounts of latency into the system, especially if the scope of locking is large, or the duration
+of the transaction is large. It's for this reason that the 2PC are typically used only for very short-term operations, such as
+creating a new order, or updating the status of an order.
+
+The figure below illustrates how the 2PC protocol works in a microservices architecture.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_two_phase_commit.png"
+    alt="Two-Phase Commit for Microservice Architecture in ClickCart"
+    width="800"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Two-Phase Commit for Microservice Architecture in ClickCart
+  </figcaption>
+</figure>
+
+On top of the figure is the first phase of the 2PC protocol, workers vote to decide if they can carry out local state changes.
+On the bottom of the figure is the second phase of the 2PC protocol, where changes are applied.
+
+It's important to mention that in such a system, there is no guarantee that these commits will occur at exactly the same time.
+The response could arrive to the coordinator in a different order, or some of the participants could fail to respond, or the
+coordinator could fail to receive the response from the participants. This can lead to a situation where the coordinator
+is not able to determine the outcome of the transaction, and it is not able to commit or rollback the transaction.
+
+The more participants are involved in the transaction, the more complex the 2PC protocol becomes, and the more
+latency it introduces into the system. This is because the coordinator needs to wait for all the participants to respond
+before it can commit or rollback the transaction.
+
+Basically, the 2PC protocol is a coordinating distributed locks. Workers need to lock the resources to ensure that the commit
+can take place during the second phase. Managing locks, and avoiding deadlocks, is a complex task.
+
+Despite the advantages of the 2PC protocol, it is not recommended to use it in a microservices architecture, because all the outlined
+reasons above.
+
+### Sagas
+
+**Sagas** are a way to manage long-running transactions in a microservices architecture, and it is an alternative to the 2PC
+protocol. A saga is an algorithm that can coordinate multiple changes in stat, but avoids the need for locking resources for
+long periods of time. It comes with the added benefit of forcing us to explicitly model the business processes that span multiple microservices.
+
+Created by [Hector Garcia-Molina and Kenneth Salem in 1987](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf), sagas is a way to manage long-running transactions, called
+long lived transactions (LLTs). These transactions might take a long time (minutes, hours, or even days) to complete.
+
+If you map a LLT to a normal database transaction, a single database transaction would span the entire life cycle of the LLT.
+This could result in multiple rows or even full tables being locked for long periods of time while the LLT is taking place,
+causing significant issues if other processes are trying to read or modify these locked resources.
+
+Instead, authors suggest to break down these LLTs into a sequence of transactions, each of which can be handled independently. The
+idea is that the duration of each of these "sub" transactions will be shorter lived, and will modify only part of the data affected
+by the entire LLT.
+
+Within each service, any state change can be handled inside a local ACID transaction, which is a normal database transaction.
+
+For handling failures in a saga there are two options:
+
+- **Backward Recovery**: If a sub-transaction fails, the saga can be _rolled back_ by executing compensating transactions for all
+  the previous sub-transactions.
+- **Forward Recovery**: If a sub-transaction fails, the saga can be _continued_ by executing compensating transactions for all
+  the previous sub-transactions, and then executing the next sub-transaction.
+
+The main difference between the two approaches is that in the backward recovery approach, the saga is rolled back to the
+beginning, and all the previous sub-transactions are undone. In the forward recovery approach, the saga is continued from the
+point of failure, and the next sub-transaction is executed.
+
+There are two types of sagas: **Orchestration** and **Choreography**.
+
+#### Orchestration
+
+In the **Orchestration** saga, a central coordinator is responsible for managing the saga and coordinating the
+execution of the sub-transactions. The coordinator sends commands to the participants, and waits for their
+responses. If a sub-transaction fails, the coordinator sends a compensating command to the participants
+to rollback the changes made by the sub-transaction. The coordinator is responsible for ensuring that the
+saga is executed in the correct order, and that the compensating commands are executed in the correct order as well.
+
+The figure below illustrates how sagas work in a microservices architecture for ClickCart. On the last step an error occurs, and the saga
+needs to be rolled back.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_orchestration_sagas.png"
+    alt="Orchestration Sagas for Microservice Architecture in ClickCart"
+    width="600"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Orchestration Sagas for Microservice Architecture in ClickCart
+  </figcaption>
+</figure>
+
+The rollback operations shown are _semantic rollbacks_, because they are not the same operations that were executed
+in the original saga, but instead are compensating operations that undo the effects of the original operations
+in the saga. This is a notable difference with database transactions, where the rollback operations
+are the same operations that were executed in the original transaction.
+
+#### Choreography
+
+In the **Choreography** saga, there is no central coordinator, and each participant is responsible for
+managing its own sub-transactions. Each participant listens for events from other participants, and executes
+its own sub-transactions based on the events it receives. If a sub-transaction fails, the participant sends
+a compensating event to the other participants to rollback the changes made by the sub-transaction.
+
+<figure className="flex flex-col items-center w-full">
+  <img
+    src="/road-to-microservices-part-2/click_cart_choreography_sagas.png"
+    alt="Choreography Sagas for Microservice Architecture in ClickCart"
+    width="500"
+    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
+  />
+  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+    Choreography Sagas for Microservice Architecture in ClickCart
+  </figcaption>
+</figure>
+
+The figure above illustrates a choreographed saga for ClickCart, where they handle an order creation process.
+
+In this approach there is not need to send events to services, instead you just fire them out, and the services that are interested
+in these events are able to receive them and act upon them. This is a more decoupled approach, and allows for more flexibility in the
+system. Typically, there is use with message brokers such as [Apache Kafka](https://kafka.apache.org/) or [RabbitMQ](https://www.rabbitmq.com/) to
+send and receive events between the services.
+
+The downside of this technique is that it is more difficult to debug and trace the flow of the saga, because there is no central coordinator that can
+track the progress of the saga. Welcome are the use of _correlation IDs_ to trace the flow of the saga, and to
+ensure that the compensating events are sent to the correct participants.
+
+In general, the extra complexity associated with tracking the progress of a saga is almost always outweighed by the benefits of
+using sagas to manage long-running transactions in a more loosely-coupled architecture.
+
+## Conclusion
+
+In this second part of the series, we explored how to split the database in a microservices architecture, and how to handle transactions
+in a microservices architecture. We discussed the different patterns that can be used to split the database, such as **Database per Service**,
+**Database per Bounded Context**, and **Split Code First**. We also discussed how to handle transactions in a microservices architecture,
+and the different patterns that can be used to manage long-running transactions, such as **Sagas**.
+
+As a final note, converting a monolith to microservices is not an easy task, and it requires careful planning and execution.
+It is important to understand the business domain and the boundaries between the bounded contexts, and to ensure that the data is
+consistent across the microservices. It is also important to ensure that the transactions are handled correctly, and that the ACID
+properties are maintained across the microservices. Work in small increments, and ensure that the system is stable before
+moving on to the next step.
+
+Not every system needs to be split into microservices, and it is important to evaluate the trade-offs before making the decision to
+split the system. Microservices can bring many benefits, such as scalability, flexibility, and maintainability, but they also come with
+their own set of challenges, such as complexity, distributed transactions, and data consistency. It is important to evaluate the
+trade-offs and to ensure that the benefits outweigh the challenges before making the decision to split the system.
+
+## References
+
+- [Monolith to Microservices](https://www.oreilly.com/library/view/monolith-to-microservices/9781492047834/)
+- [Building Microservices, 2nd Edition](https://www.oreilly.com/library/view/building-microservices-2nd/9781492034018/)
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
