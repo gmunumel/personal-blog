@@ -80,16 +80,14 @@ and the independence of the business logic from external frameworks and technolo
 design that is easy to understand, maintain, and test, while allowing for flexibility in the choice of
 technologies used in the application.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/clean-architecture-python-part-1/clean_architecture.png"
-    alt="Diagram Clean Architecture"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Diagram Clean Architecture
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Diagram Clean
+  Architecture](/clean-architecture-python-part-1/clean_architecture.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Diagram Clean Architecture
+    </figcaption>
+  </div>
 </figure>
 
 The layers in this architecture are wrapped around each other in concentric circles. The main rule is that
@@ -109,16 +107,14 @@ separation of the application's core logic from its external dependencies, such 
 and external services. The core logic is surrounded by ports (interfaces) that define how the application
 interacts with the outside world, while adapters implement these ports to connect to external systems.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/clean-architecture-python-part-1/hexagonal_architecture.png"
-    alt="Diagram Hexagonal Architecture"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Diagram Hexagonal Architecture
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Diagram Hexagonal
+  Architecture](/clean-architecture-python-part-1/hexagonal_architecture.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Diagram Hexagonal Architecture
+    </figcaption>
+  </div>
 </figure>
 
 The application code is represented as a hexagon, with the core business logic at the center. Notice that
@@ -154,16 +150,14 @@ application into concentric circles. The innermost circle contains the domain mo
 the outer circles contain interfaces, tests, and external dependencies. This structure promotes a clear separation of concerns
 and promotes testability by isolating the core logic from external dependencies.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/clean-architecture-python-part-1/onion_architecture.png"
-    alt="Diagram Onion Architecture"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Diagram Onion Architecture
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Diagram Onion
+  Architecture](/clean-architecture-python-part-1/onion_architecture.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Diagram Onion Architecture
+    </figcaption>
+  </div>
 </figure>
 
 There is an important distinction: **Application Core**. This service is responsible for
@@ -210,17 +204,15 @@ This is a key aspect for all the architectures mentioned above.
 
 Following is an example of the **Domain Layered Architecture** without and with Dependency Inversion:
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/clean-architecture-python-part-1/dependency_inversion.png"
-    alt="Comparison Domain Layered Architecture without and with Dependency Inversion"
-    width="800"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Comparison the Domain Layered Architecture without and with Dependency
-    Inversion
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Comparison Domain Layered Architecture without and with Dependency
+  Inversion](/clean-architecture-python-part-1/dependency_inversion.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Comparison the Domain Layered Architecture without and with Dependency
+      Inversion
+    </figcaption>
+  </div>
 </figure>
 
 On the left side, there is a service in the domain layer that works with entities and repositories from the persistence layer. The problem

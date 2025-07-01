@@ -39,16 +39,14 @@ description of the ClickCart application.
 
 The following image is a simplified model of ClickCart monolithic application:
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_simplified.png"
-    alt="Simplified Model of ClickCart Monolithic Application"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Simplified Model of ClickCart Monolithic Application
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Simplified Model of ClickCart Monolithic
+  Application](/road-to-microservices-part-1/click_cart_simplified.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Simplified Model of ClickCart Monolithic Application
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above you can see the multiple interactions between different bounded contexts of the ClickCart monolithic application. All the
@@ -183,16 +181,14 @@ Steps to implement the Strangler Fig Application pattern:
 
 The following image illustrates the Strangler Fig Application pattern applied to the ClickCart monolithic application:
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_strangler_fig_pattern.png"
-    alt="Strangler Fig Pattern for ClickCart"
-    width="900"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Strangler Fig Pattern for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Strangler Fig Pattern for
+  ClickCart](/road-to-microservices-part-1/click_cart_strangler_fig_pattern.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Strangler Fig Pattern for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, you can see how the `Payment Management` is being replaced by a new microservice, while the `Order Management` context
@@ -218,16 +214,14 @@ where a whole vertical slice of functionality can be migrated.
 In the case of ClickCart, we can apply the UI Composition pattern to the `Order Management Context`, which is responsible for displaying
 the last 10 orders of the user.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_ui_composition.png"
-    alt="UI Composition Pattern for ClickCart"
-    width="1000"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    UI Composition Pattern for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![UI Composition Pattern for
+  ClickCart](/road-to-microservices-part-1/click_cart_ui_composition.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      UI Composition Pattern for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, you can see how the `Order Module` responsible for providing transformed into a separate microservice,
@@ -254,16 +248,14 @@ Steps to implement the Branch by Abstraction pattern:
 4. Switch over the abstraction to use the new implementation. Use feature flags to control the visibility of the new implementation.
 5. Clean up the abstraction if necessary, and remove the old implementation.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_branch_by_abstraction.png"
-    alt="Branch by Abstraction Pattern for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Branch by Abstraction Pattern for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Branch by Abstraction Pattern for
+  ClickCart](/road-to-microservices-part-1/click_cart_branch_by_abstraction.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Branch by Abstraction Pattern for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, you can see how the `Notification Center` is being migrated to a new microservice, `New Notification Center`, by
@@ -289,16 +281,14 @@ Consider this pattern when the implementation to migrate is on high-risk or has 
 such as a payment processing or order management system. The complexity of implementing it sometimes outweighs, so it is
 important to evaluate the trade-offs before applying this pattern.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_parallel_run.png"
-    alt="Parallel Run Pattern for ClickCart"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Parallel Run Pattern for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Parallel Run Pattern for
+  ClickCart](/road-to-microservices-part-1/click_cart_parallel_run.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Parallel Run Pattern for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates how to implement the Parallel Run pattern for the ClickCart application, where both the old and new
@@ -316,16 +306,14 @@ This pattern uses a decorator to make it appear that the monolith is still calli
 the decorator intercepts the calls and adding new functionality. The decorator can be implemented as a separate microservice,
 or as a module in the monolith, depending on the complexity of the functionality to be added.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_decorating_collaborator.png"
-    alt="Decorating Collaborator Pattern for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Decorating Collaborator Pattern for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Decorating Collaborator Pattern for
+  ClickCart](/road-to-microservices-part-1/click_cart_decorating_collaborator.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Decorating Collaborator Pattern for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 When an order is placed successfully, the `Proxy` calls out the `Notification Center` to send a notification to the user.
@@ -357,16 +345,14 @@ Triggers can be used to capture changes in the data and send them to a new micro
 modifying the existing code in the monolith. Try to avoid the temptation to use triggers to implement business logic, as they can
 lead to complex and hard-to-maintain code. Instead, use them to capture changes in the data and send them to a new microservice.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_database_triggers.png"
-    alt="Database Triggers for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database Triggers for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database Triggers for
+  ClickCart](/road-to-microservices-part-1/click_cart_database_triggers.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database Triggers for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 After a notification is created in the table `notification_events`, the database trigger is executed and sends an email action to the
@@ -380,16 +366,14 @@ you need to have access to the transaction logs of the database, which may not b
 is managed by a third-party service. Depending on the database engine, you can use different tools to read the transaction logs,
 such as [Debezium](https://debezium.io/), [Maxwell's Daemon](https://maxwells-daemon.io/), or custom scripts.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_transaction_log_pollers.png"
-    alt="Transaction Log Pollers for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Transaction Log Pollers for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Transaction Log Pollers for
+  ClickCart](/road-to-microservices-part-1/click_cart_transaction_log_pollers.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Transaction Log Pollers for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 This approach is the neatest solution for implementing change data capture, as it allows you to capture changes in the data without
@@ -423,16 +407,14 @@ small applications or when the microservices are tightly coupled and need to acc
 tight coupling between the microservices and makes it difficult to scale them individually. It also makes it harder to
 manage the database schema, as changes made by one microservice can affect the other microservices that share the same database.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_shared_database.png"
-    alt="Shared Database for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Shared Database for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Shared Database for
+  ClickCart](/road-to-microservices-part-1/click_cart_shared_database.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Shared Database for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Another issue is that it becomes unclear as to who "controls" the data. In the above figure, seven services can directly change order
@@ -449,16 +431,14 @@ a microservice. This _view_ can be used to filter, aggregate, or transform the d
 ability of a view to project a limited subset of information from the underlying source allows one to implement a form of information hiding,
 helpful in protecting sensitive data or for exposing only the data that is relevant to the microservice.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_database_view.png"
-    alt="Database View for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database View for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database View for
+  ClickCart](/road-to-microservices-part-1/click_cart_database_view.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database View for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Avoid this pattern if your goal is to expose this information via a service interface, as it can lead to tight coupling between the
@@ -471,16 +451,14 @@ a service interface to access the data. In this approach, the database is hidden
 moving database dependencies to become service dependencies. This allows the microservice to access the data without
 directly accessing the database.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_database_wrapping_service.png"
-    alt="Database Wrapping Service for ClickCart"
-    width="800"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database Wrapping Service for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database Wrapping Service for
+  ClickCart](/road-to-microservices-part-1/click_cart_database_wrapping_service.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database Wrapping Service for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 On the figure above, you can see how a new service `Platform` is created and all the direct communications to the database are
@@ -508,16 +486,14 @@ To properly implement this pattern you can either use a data capture system that
 batch process that periodically copies the data from the monolith database to an external database as an endpoint. Another possible
 option is to listen to events fired from the service, and use that to update the external database.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_database_as_a_service_interface.png"
-    alt="Database as a Service Interface for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database as a Service Interface for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database as a Service Interface for
+  ClickCart](/road-to-microservices-part-1/click_cart_database_as_a_service_interface.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database as a Service Interface for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The above figure illustrates how to expose a dedicated database as an endpoint `External DB`, allowing the internal database
@@ -550,16 +526,14 @@ In the figure below, we are exposing information from the monolith via a proper 
 to access the data without directly accessing the database. The microservice can then use this information to
 implement its own business logic and functionality, while still relying on the monolith to manage the state and associated data.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_aggregate_exposing_monolith.png"
-    alt="Database as a Service Interface for ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database as a Service Interface for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Aggregate exposing Monolith for
+  ClickCart](/road-to-microservices-part-1/click_cart_aggregate_exposing_monolith.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Aggregate exposing Monolith for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 By explicitly exposing the information needed in a well-defined interface, this is the first step to potentially discover
@@ -578,16 +552,14 @@ There is an opportunity to apply the **Change Data Ownership** when data that is
 control of a new microservice. In the following figure, we can see how the `User Service` is taking ownership of the user-related data,
 allowing it to manage the state and associated data independently from the monolith.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_change_data_ownership.png"
-    alt="Change Data Ownership for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Change Data Ownership for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Change Data Ownership for
+  ClickCart](/road-to-microservices-part-1/click_cart_change_data_ownership.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Change Data Ownership for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Untangling the `User` data from the existing monolith database can be a complex task, because most likely, foreign keys need to be
@@ -631,16 +603,14 @@ Below is a simple example using the following steps:
 
 All the steps above are illustrated in the sequence of figures below, each step showing the state of the data synchronization process.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_synchronize_data.png"
-    alt="Synchronize Data for ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Synchronize Data for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Synchronize Data for
+  ClickCart](/road-to-microservices-part-1/click_cart_synchronize_data.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Synchronize Data for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 This pattern makes a lot of sense if you want to split the schema _before_ splitting put the application code.
@@ -657,16 +627,14 @@ The **Tracer Write** pattern consists of moving the source of truth for the data
 two sources of truth during the migration process. Before the release, the monolith is the source of truth. After the release,
 the new microservice is the source of truth.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-1/click_cart_tracer_write.png"
-    alt="Tracer Write for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Tracer Write for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Tracer Write for
+  ClickCart](/road-to-microservices-part-1/click_cart_tracer_write.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Tracer Write for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 One way to implement this pattern is to start with a small set of data being synchronized and increase this over time, while also

@@ -2,6 +2,7 @@ import React from "react";
 import PythonRunner from "@/app/components/PythonRunner";
 import Mermaid from "@/app/components/Mermaid";
 import CopyableCodeBlock from "@/app/components/CopyableCodeBlock";
+import ArticleImage from "@/app/components/ArticleImage";
 
 const pythonComponent = (code: string | undefined) => {
   const noRun = code?.trimStart().startsWith("# no-run") ?? false;
@@ -81,5 +82,8 @@ export const mdxComponents = {
   },
   a: (props: React.ComponentPropsWithoutRef<"a">) => (
     <a {...props} target="_blank" rel="noopener" />
+  ),
+  img: (props: React.ComponentPropsWithoutRef<"img">) => (
+    <ArticleImage {...props} />
   ),
 };

@@ -32,16 +32,14 @@ and schema. On top of the figure, there is a single database engine that hosts m
 in the database engine. At the bottom of the figure, there is a logical separation of the database, where each microservice has its own
 database engine and schema separated.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_physical_logical_database.png"
-    alt="Physical and Logical Database Separation for ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Physical and Logical Database Separation for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Physical and Logical Database Separation for
+  ClickCart](/road-to-microservices-part-2/click_cart_physical_logical_database.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Physical and Logical Database Separation for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Logical separation is less common, most of the time, one database engine hosts multiple schemas, and each microservice has its own schema
@@ -75,16 +73,14 @@ in the application. Tools like [SQLAlchemy](https://www.sqlalchemy.org/) for Pyt
 a way to create repositories that can be used to access the data in the database. Making it easy to map objects or data structures to and
 from the database, rather than having a single repository layer for all the data access concerns.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_repository_per_bounded_context.png"
-    alt="Repository per Bounded Context for ClickCart"
-    width="800"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Repository per Bounded Context for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Repository per Bounded Context for
+  ClickCart](/road-to-microservices-part-2/click_cart_repository_per_bounded_context.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Repository per Bounded Context for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, each repository abstracts access to the service’s portion of the schema.
@@ -105,16 +101,14 @@ seams for microservice boundaries are, and how to split the code apart.
 For **Database per Bounded Context** pattern, each bounded context has its own database, allowing each microservice to manage its own data store
 independently, without being affected by the changes made to the other microservices.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_database_per_bounded_context.png"
-    alt="Database per Bounded Context for ClickCart"
-    width="800"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database per Bounded Context for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database per Bounded Context for
+  ClickCart](/road-to-microservices-part-2/click_cart_database_per_bounded_context.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database per Bounded Context for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, each service has its own database, which is responsible for managing the data in the bounded context.
@@ -152,16 +146,14 @@ database schema from the monolith's database, and allowing the new microservice 
 without being affected by the changes made to the other microservices. In this way the problem of having a shared database is mitigated, as
 the new microservice has its own schema to store the data.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_multi_schema_storage.png"
-    alt="Multi-schema Storage for ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Multi-schema Storage for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Multi-schema Storage for
+  ClickCart](/road-to-microservices-part-2/click_cart_multi_schema_storage.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Multi-schema Storage for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates how new data is being stored in a new schema, `User Management Schema`, but still accesses old data directly in the
@@ -187,16 +179,14 @@ which allows you to split a table into multiple tables, each with its own schema
 The following figure illustrates how to split one table `users` into two tables, `users` and `orders`. Table `users` contains
 data that is specific for an order like `Order_Level`.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_split_table.png"
-    alt="Split Table for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Split Table for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Split Table for
+  ClickCart](/road-to-microservices-part-2/click_cart_split_table.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Split Table for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Instead of creating a new table another solution would be create a foreign key relationship between the two tables,
@@ -205,16 +195,14 @@ This is not ideal because it creates a tight coupling between the two tables, an
 two separate databases. The example is straightforward, but in practice, there is also another case, when two services
 need to access the same table, and the same column, as it is illustrated in the figure below.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_split_table_same_column.png"
-    alt="Split Table with same column Key for ClickCart"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Split Table with same column for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Split Table with same column Key for
+  ClickCart](/road-to-microservices-part-2/click_cart_split_table_same_column.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Split Table with same column for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 For the services `User Management` and `Notification Center`, the column `status` is a shared column, for `User Management` it is a column
@@ -235,16 +223,14 @@ because needs it for its operation. The bottom of the figure illustrates how to 
 to different databases. First, the `Order Management` service does a query to obtain the `Order_ID`s list, with that list it can
 request the `Product Management` service to obtain the products related to those orders.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_move_foreign_key_relationship.png"
-    alt="Move Foreign-key Relationship for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Move Foreign-key Relationship for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Move Foreign-key Relationship for
+  ClickCart](/road-to-microservices-part-2/click_cart_move_foreign_key_relationship.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Move Foreign-key Relationship for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 Logically, the join operation is still happening, but it is now done inside the `Order Management` service, rather than in the database.
@@ -281,16 +267,14 @@ the static reference data in multiple microservices, and ensure that the data is
 to have a duplicate copy of the static reference data in each microservice that needs it. The challenge is to ensure that the
 data is consistent over time especially when the reference data changes unexpectedly.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_duplicate_static_reference.png"
-    alt="Duplicate Static Reference for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Duplicate Static Reference for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Duplicate Static Reference for
+  ClickCart](/road-to-microservices-part-2/click_cart_duplicate_static_reference.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Duplicate Static Reference for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates how the static reference data of `country_codes` is duplicated in each microservice that needs it.
@@ -312,16 +296,14 @@ reference data that is used by multiple microservices. It allows avoiding duplic
 across the microservices. The figure below is an example of how to use a dedicated reference data service for the ClickCart application.
 `Product Catalog` and `Order Management` services are using the same reference schema for `country_codes`.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_dedicated_reference_data.png"
-    alt="Dedicated Reference Data for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Dedicated Reference Data for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Dedicated Reference Data for
+  ClickCart](/road-to-microservices-part-2/click_cart_dedicated_reference_data.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Dedicated Reference Data for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 It is still possible to do join operations between the reference data and others schemas, the only condition is that they
@@ -336,16 +318,14 @@ The **Static Reference Data Library** pattern is a variation of the **Duplicate 
 is stored in a library that is shared by multiple microservices. The library must be statically linked by any microservice that
 wants to use the static reference data, and the data is not stored in the database.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_static_reference_data_library.png"
-    alt="Static Reference Data Library for ClickCart"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Static Reference Data Library for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Static Reference Data Library for
+  ClickCart](/road-to-microservices-part-2/click_cart_static_reference_data_library.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Static Reference Data Library for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, the Static Reference Library has been deployed as a shared library, and each microservice statically linked
@@ -365,16 +345,14 @@ to access the data. The pattern **Static Reference Data Service** just does that
 and ensures that the data is consistent across the microservices. The figure below illustrates the newly created microservice `Country Codes`
 that is responsible for managing the static reference data for the ClickCart application.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_static_reference_data_service.png"
-    alt="Static Reference Data Service for ClickCart"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Static Reference Data Service for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Static Reference Data Service for
+  ClickCart](/road-to-microservices-part-2/click_cart_static_reference_data_service.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Static Reference Data Service for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 This is a good fit for [Function-as-a-Service (FaaS)](https://en.wikipedia.org/wiki/Function_as_a_service) or Serverless architectures, where the static reference data is managed by a
@@ -416,16 +394,14 @@ that are using different databases, it is not possible to use a single transacti
 This is because each database has its own transaction management system. The next figure illustrates how the transaction is
 handled in a microservices architecture, where each microservice has its own database.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_database_transaction.png"
-    alt="Database Transaction for Microservice Architecture in ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Database Transaction for Microservice Architecture in ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Database Transaction for Microservice Architecture in
+  ClickCart](/road-to-microservices-part-2/click_cart_database_transaction.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Database Transaction for Microservice Architecture in ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 `Shopping Cart` and `Order Management` services are using different databases, and the transactions are handled independently.
@@ -455,16 +431,14 @@ creating a new order, or updating the status of an order.
 
 The figure below illustrates how the 2PC protocol works in a microservices architecture.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_two_phase_commit.png"
-    alt="Two-Phase Commit for Microservice Architecture in ClickCart"
-    width="800"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Two-Phase Commit for Microservice Architecture in ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Two-Phase Commit for Microservice Architecture in
+  ClickCart](/road-to-microservices-part-2/click_cart_two_phase_commit.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Two-Phase Commit for Microservice Architecture in ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 On top of the figure is the first phase of the 2PC protocol, workers vote to decide if they can carry out local state changes.
@@ -528,16 +502,14 @@ saga is executed in the correct order, and that the compensating commands are ex
 The figure below illustrates how sagas work in a microservices architecture for ClickCart. On the last step an error occurs, and the saga
 needs to be rolled back.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_orchestration_sagas.png"
-    alt="Orchestration Sagas for Microservice Architecture in ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Orchestration Sagas for Microservice Architecture in ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Orchestration Sagas for Microservice Architecture in
+  ClickCart](/road-to-microservices-part-2/click_cart_orchestration_sagas.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Orchestration Sagas for Microservice Architecture in ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The rollback operations shown are _semantic rollbacks_, because they are not the same operations that were executed
@@ -552,16 +524,14 @@ managing its own sub-transactions. Each participant listens for events from othe
 its own sub-transactions based on the events it receives. If a sub-transaction fails, the participant sends
 a compensating event to the other participants to rollback the changes made by the sub-transaction.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/road-to-microservices-part-2/click_cart_choreography_sagas.png"
-    alt="Choreography Sagas for Microservice Architecture in ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Choreography Sagas for Microservice Architecture in ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Choreography Sagas for Microservice Architecture in
+  ClickCart](/road-to-microservices-part-2/click_cart_choreography_sagas.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Choreography Sagas for Microservice Architecture in ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates a choreographed saga for ClickCart, where they handle an order creation process.

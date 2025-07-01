@@ -79,16 +79,13 @@ the shopping cart management, including adding and removing items, calculating t
 
 The following figure illustrates the microservices architecture for the ClickCart application.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart.png"
-    alt="Overview of the ClickCart Model"
-    width="1000"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Overview of the ClickCart Model
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Overview of the ClickCart Model](/microservices-in-depth/click_cart.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Overview of the ClickCart Model
+    </figcaption>
+  </div>
 </figure>
 
 Each component is defined with a bounded context named suffixed by _context_. For example, for product catalog, the
@@ -108,31 +105,27 @@ approach that structures an application as a collection of loosely coupled servi
 
 The following figure shows a monolithic application architecture for the ClickCart application.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_monolithic.png"
-    alt="Monolithic ClickCart Architecture"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Monolithic ClickCart Architecture
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Monolithic ClickCart
+  Architecture](/microservices-in-depth/click_cart_monolithic.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Monolithic ClickCart Architecture
+    </figcaption>
+  </div>
 </figure>
 
 Each component has its own service and repository, that eventually request or store data in a shared database. See the next figure
 for a comparison of the monolithic architecture with the microservices architecture.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_microservices.png"
-    alt="Microservices ClickCart Architecture"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Microservices ClickCart Architecture
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Microservices ClickCart
+  Architecture](/microservices-in-depth/click_cart_microservices.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Microservices ClickCart Architecture
+    </figcaption>
+  </div>
 </figure>
 
 Now each component is a separate microservice, with its own codebase and repository. Each service can be developed, deployed, and scaled independently.
@@ -233,16 +226,14 @@ and can be easily integrated into the overall system.
 
 In the following figure, you can see a holistic architecture for any application.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_holistic.png"
-    alt="Holistic View of an Application"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Holistic View of an Application
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Holistic View of an
+  Application](/microservices-in-depth/click_cart_holistic.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Holistic View of an Application
+    </figcaption>
+  </div>
 </figure>
 
 This figure shows the holistic view of an application. The steps to develop a microservices architecture include:
@@ -318,16 +309,14 @@ releases.
 
 In the following figure you can see a typical CI/CD pipeline for microservices.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_ci_cd.png"
-    alt="Continuous Integration and Deployment Pipeline for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Continuous Integration and Deployment Pipeline for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Continuous Integration and Deployment Pipeline for
+  ClickCart](/microservices-in-depth/click_cart_ci_cd.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Continuous Integration and Deployment Pipeline for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 At the top of the figure, you can see the CI pipeline for the ClickCart application, each service has its own CI pipeline that runs
@@ -455,16 +444,14 @@ services to interact with the service without knowing the internal details.
 Below is a progression of a split database schema from a monolithic application to a microservices architecture, using as starting point the situation
 in the figure about <a href="#monolithic-vs-microservices">Monolithic vs Microservices Section</a>.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_split_db.png"
-    alt="Splitting the Database in ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Splitting the Database in ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Splitting the Database in
+  ClickCart](/microservices-in-depth/click_cart_split_db.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Splitting the Database in ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 On the left side of the figure you can see the monolithic application with a single database schema that contains all the data for
@@ -501,16 +488,13 @@ or use a data warehouse to store the aggregated data.
 
 In the following figure you can see an example of a data pump that aggregates data from multiple services to generate a report.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_data_pump.png"
-    alt="Data Pump for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Data Pump for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Data Pump for ClickCart](/microservices-in-depth/click_cart_data_pump.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Data Pump for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The `Product Service` will read or write to a database, which after a pre-defined interval of time will produce a data pump `Central Reporting DB`.
@@ -623,16 +607,14 @@ Tend to be more brittle with a higher cost of change.
 
 In the following figure you can see an example of orchestration vs choreography.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_data_orchestration_vs_choreography.png"
-    alt="Orchestration vs Choreography for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Orchestration vs Choreography for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Orchestration vs Choreography for
+  ClickCart](/microservices-in-depth/click_cart_data_orchestration_vs_choreography.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Orchestration vs Choreography for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 On the left side of the figure you can see an example of orchestration, where a central service `User Management Service`
@@ -654,16 +636,14 @@ This is often referred to as **API versioning** and can be achieved by including
 `/api/v1/users` or `/api/v2/users`. This allows clients to specify which version of the API they want to use, and allows services to evolve
 without breaking existing clients.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_different_endpoints.png"
-    alt="Different Versioning Endpoints for ClickCart"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Different Versioning Endpoints for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Different Versioning Endpoints for
+  ClickCart](/microservices-in-depth/click_cart_different_endpoints.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Different Versioning Endpoints for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 The figure above shows an example of different versioning endpoints for `ClickCart` and `Admin` services. On the left side, you can see
@@ -706,16 +686,14 @@ allowing for isolation and resource allocation. This approach allows for better 
 
 The following figure shows an example of deploying each service on its container for a host.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_docker_containers.png"
-    alt="Docker Containers for ClickCart"
-    width="300"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Docker Containers for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Docker Containers for
+  ClickCart](/microservices-in-depth/click_docker_containers.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Docker Containers for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 One of the challenges of deploying microservices in Docker containers is exposing the services to the outside world. Will require additional
@@ -730,16 +708,14 @@ tested, you can switch traffic to the green environment, allowing for a seamless
 
 The following image shows an example of blue/green deployments for a service.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_blue_green_deployment.png"
-    alt="Blue/Green Deployment for ClickCart"
-    width="700"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Blue/Green Deployment for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Blue/Green Deployment for
+  ClickCart](/microservices-in-depth/click_cart_blue_green_deployment.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Blue/Green Deployment for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 On the left side of the figure you can see two versions of the same service `User Service`, on the left is the blue environment with version **v42**
@@ -899,16 +875,14 @@ affecting the overall system.
 
 Following figure shows an example of aggregated logs for a microservices architecture.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_elk.png"
-    alt="Aggregated Logs using ELK for ClickCart"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Aggregated Logs using ELK for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Aggregated Logs using ELK for
+  ClickCart](/microservices-in-depth/click_cart_elk.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Aggregated Logs using ELK for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 In the figure above, you can see an example of aggregated logs for `ClickCart` using ELK Stack. The `Application Logs` from a `User Service` are collected
@@ -932,16 +906,14 @@ the correlation ID in the logs.
 
 The following image shows an example of correlation IDs for a microservices architecture.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/microservices-in-depth/click_cart_correlation_ids.png"
-    alt="Correlation IDs for ClickCart"
-    width="400"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Correlation IDs for ClickCart
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![Correlation IDs for
+  ClickCart](/microservices-in-depth/click_cart_correlation_ids.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Correlation IDs for ClickCart
+    </figcaption>
+  </div>
 </figure>
 
 You can see the a request to create an user is made on the `Frontend`, which is then sent to the `User Service` with a correlation ID (`foo-42`).

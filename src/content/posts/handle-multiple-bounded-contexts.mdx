@@ -30,16 +30,13 @@ According to Eric Evans, the author of _Domain-Driven Design: Tackling Complexit
 
 A bounded context can be thought of as a specific area of the system where a particular model is valid and applicable.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/bounded_contexts.png"
-    alt="Two Contexts with a common Aggregate"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Two Contexts with a common Aggregate
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Two Contexts with a common Aggregate](/handle-multiple-bounded-contexts/bounded_contexts.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Two Contexts with a common Aggregate
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates two contexts, each with its own model.
@@ -76,16 +73,13 @@ to avoid this issue.
 This approach can lead to a more modular and flexible architecture, as each bounded context can be developed and deployed independently.
 However, it can also lead to duplication of code and data, which can increase complexity and maintenance costs.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/embrace_independence.png"
-    alt="Two Contexts with independent Entities"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Two Contexts with independent Entities
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Two Contexts with independent Entities](/handle-multiple-bounded-contexts/embrace_independence.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Two Contexts with independent Entities
+    </figcaption>
+  </div>
 </figure>
 
 In the example of the _Finance Context_ and _Human Resources Context_, we could have two separate `Account` entities, each with its own attributes and behaviors.
@@ -168,16 +162,13 @@ Steps to implement a context map:
 
 A context map can be implemented in Python by defining a separate module or package that contains the definitions of the relationships between different bounded contexts.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/context_map.png"
-    alt="Context Map"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Context Map
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Context Map](/handle-multiple-bounded-contexts/context_map.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Context Map
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates a context map that defines the relationships between the _Finance Context_ and _Human Resources Context_.
@@ -227,16 +218,13 @@ model, which is the shared kernel.
 The following figure illustrates a shared kernel that contains common entities and concepts used by both the _Finance Context_ and _Human Resources Context_,
 in this case the `Record` aggregate in _Monitor Context_.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/shared_kernel.png"
-    alt="Shared Kernel"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Shared Kernel
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Shared Kernel](/handle-multiple-bounded-contexts/shared_kernel.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Shared Kernel
+    </figcaption>
+  </div>
 </figure>
 
 Following the example of the _Finance Context_ and _Human Resources Context_, we can define a `Record` aggregate in a shared kernel that both contexts can use.
@@ -267,16 +255,13 @@ Another approach to handling multiple bounded contexts is to implement a separat
 aggregate does not belong to any specific bounded context, but rather exists in its own context. We should promote it to its own bounded
 context and treat others as consumers of its API or events.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/separate_context.png"
-    alt="Separate Context"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Separate Context
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Separate Context](/handle-multiple-bounded-contexts/separate_context.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Separate Context
+    </figcaption>
+  </div>
 </figure>
 
 In the example of the _Finance Context_ and _Human Resources Context_, we could have a separate context for the `Account` aggregate that both contexts can use _Account Management Context_.
@@ -319,18 +304,15 @@ The ACL consist of:
 
 The following figure illustrates an ACL that translates between the _Finance Context_ and _Human Resources Context_.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/anti_corruption_layer.png"
-    alt="Anti Corruption Layer"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Anti Corruption Layer. the _U_ stands for Upstream, <br />
-    _D_ stands for Downstream, _OHS_ stands for Open Host Service, <br />
-    and _PL_ stands for Published Language.
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Anti Corruption Layer](/handle-multiple-bounded-contexts/anti_corruption_layer.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Anti Corruption Layer. the _U_ stands for Upstream, <br />
+      _D_ stands for Downstream, _OHS_ stands for Open Host Service, <br />
+      and _PL_ stands for Published Language
+    </figcaption>
+  </div>
 </figure>
 
 In the above figure, the ACL acts as a protection layer between the _Finance Context_ and _Account Management Context_,
@@ -352,17 +334,14 @@ Published Language is often combined with Open Host Service to provide a clear a
 
 Below is a zoom in figure of the ACL that illustrates the different components.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/anti_corruption_layer_2.png"
-    alt="Zoom in Anti Corruption Layer for Human Resources Context and Account Management Context"
-    width="500"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Zoom in Anti Corruption Layer for _Human Resources Context_ <br />
-    and _Account Management Context_.
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Zoom in Anti Corruption Layer for Human Resources Context and Account Management Context](/handle-multiple-bounded-contexts/anti_corruption_layer_2.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Zoom in Anti Corruption Layer for _Human Resources Context_ <br />
+      and _Account Management Context_
+    </figcaption>
+  </div>
 </figure>
 
 There is a `HTTPClient (Facade)` that acts as a facade for the _Account Management Context_. A `AccountAdapter` that provides
@@ -545,17 +524,14 @@ Aggregates are idempotent, meaning that they can be applied multiple times witho
 to an aggregate is defined as **Aggregate Root**. But must not communicate with other aggregates directly other than the
 Aggregate Root. This ensures that the aggregate is treated as a single unit and that its state is consistent.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/aggregate.png"
-    alt="Aggregate - A cluster of domain objects that can be treated as a single unit."
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Aggregate - A cluster of domain objects that can be treated as a single
-    unit.
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Aggregate - A cluster of domain objects that can be treated as a single unit](/handle-multiple-bounded-contexts/aggregate.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Aggregate - A cluster of domain objects that can be treated as a single
+      unit
+    </figcaption>
+  </div>
 </figure>
 
 The figure above illustrates an aggregate root named `Keyboard`,
@@ -574,16 +550,13 @@ Steps to implement domain events using aggregates:
 
 The following figure illustrates how domain events can be used to handle a single aggregate.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/handle-multiple-bounded-contexts/domain_events.png"
-    alt="Domain Events"
-    width="600"
-    className="border bg-white border-gray-200 dark:border-gray=-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    Domain Events
-  </figcaption>
+<figure className="article-figure flex flex-col items-center">
+  ![Domain Events](/handle-multiple-bounded-contexts/domain_events.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Domain Events
+    </figcaption>
+  </div>
 </figure>
 
 Coming back to the example of the _Finance Context_ and _Human Resources Context_, every time a new account is created in

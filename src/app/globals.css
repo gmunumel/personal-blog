@@ -184,6 +184,10 @@ body {
   border-bottom: none;
 }
 
+.prose figure p {
+  margin-bottom: 0.5em;
+}
+
 hr {
   border: none;
   border-top: 1px solid var(--border);
@@ -225,4 +229,9 @@ video {
 .table-content ul {
   list-style-type: disc;
   padding-left: 1em;
+}
+
+.article-figure {
+  margin: auto;
+  width: 50%;
 }

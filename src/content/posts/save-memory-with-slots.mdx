@@ -38,34 +38,28 @@ where:
 
 The dictionary below uses immutable types for both keys and values. This ensures the reference held by the dictionary always points to the same objects in memory.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/save-memory-with-slots/immutable_dict.png"
-    alt="A simple dictionary in Python using immutable types"
-    width="50%"
-    height="60%"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    A simple dictionary in Python using immutable types
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![A simple dictionary in Python using immutable
+  types](/save-memory-with-slots/immutable_dict.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      A simple dictionary in Python using immutable types
+    </figcaption>
+  </div>
 </figure>
 
 In the next image, the dictionary includes a key-value pair where the value is a mutable type (e.g., a `list`). While the
 dictionary still holds a reference to the original object, the mutable value `["foo", 42]` breaks immutability. Python must
 allocate new memory for such values since it cannot guarantee the value won’t change.
 
-<figure className="flex flex-col items-center w-full">
-  <img
-    src="/save-memory-with-slots/mutable_dict.png"
-    alt="A dictionary in Python with a mutable list value"
-    width="50%"
-    height="60%"
-    className="border bg-white border-gray-200 dark:border-gray-700 shadow-md transition-transform duration-200 hover:scale-[1.02] p-6"
-  />
-  <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
-    A dictionary in Python with a mutable list value
-  </figcaption>
+<figure className="flex flex-col items-center article-figure">
+  ![A dictionary in Python with a mutable list
+  value](/save-memory-with-slots/mutable_dict.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      A dictionary in Python with a mutable list value
+    </figcaption>
+  </div>
 </figure>
 
 The dynamic nature of dictionaries allows for flexible attribute assignment, but it also has some downsides.
