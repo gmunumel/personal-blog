@@ -1,0 +1,810 @@
+---
+title: Run your own Kubernetes Cluster in Proxmox
+tags:
+  - proxmox
+  - kubernetes
+  - containerization
+synopsis: >
+  This guide walks you through the process of setting up a Kubernetes cluster on Proxmox, including installation, configuration, and management of containers.
+date: 2025-02-01
+---
+
+# Run your own Kubernetes Cluster in Proxmox
+
+I have been using AWS with EKS to run my Kubernetes clusters for a while, but I wanted to
+explore running Kubernetes on my own hardware. The main reason for this is to have
+more control over the infrastructure, reduce costs, and learn more about Kubernetes and containerization.
+Additionally, running EKS have an increasing cost as the number of clusters and nodes grow,
+which can be a concern for my personal usage. So I decided to set up a Kubernetes cluster on Proxmox.
+
+[Proxmox](https://www.proxmox.com/en/) is a powerful open-source virtualization platform that allows you to run
+virtual machines and containers.
+
+In this guide, I will walk you through the process of setting up a Kubernetes cluster on Proxmox.
+
+## Minis Forum
+
+I want to mention the hardware I am using for this setup so you have a reference that can help
+you to take a decision. I have a [Minis Forum](https://www.minisforum.com/)
+mini PC Pro.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Minis Forum Venus UM7690](/proxmox-kubernetes/minis_forum.jpg)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Minis Forum Venus UM7690
+    </figcaption>
+  </div>
+</figure>
+
+The technical details are:
+
+- **Model**: Minis Forum Venus UM7690
+- **CPU**: AMD Ryzen 9 7940HS
+- **RAM**: 64 GB DDR5
+- **Storage**: 1 TB NVMe SSD
+- **Network**: 2.5 Gbps Ethernet
+- **GPU**: AMD Radeon 780M
+- **OS**: Windows 11 Pro
+
+As you can see it comes with Windows 11 Pro pre-installed, but I will be installing Proxmox on it to run
+my Kubernetes cluster.
+
+Note that for better performance of Kubernetes cluster it is recommend to have at least 32 GB of memory, optimal
+would be 64 GB. In general, my mini pc is powerful enough to run multiple virtual machines and containers,
+and it has a good network interface to handle the traffic.
+
+## Pre-requisites
+
+First at all you need to have a deployable project that you can use to test your Kubernetes cluster.
+I will use my [Phonic AI](https://github.com/gmunumel/phonic-ai) project, which is a simple
+application that transcript live audio to text using OpenAI's Whisper model. The projects contains
+a frontend using React, a backed using FastAPI, and an ai module that handles the audio processing using
+Whisper OpenAI model.
+
+The project was already deployed in AWS EKS, so I will use the same Docker images to deploy it
+in my Kubernetes cluster.
+
+Also you will need to have `kubectl` installed on your local machine to interact with the Kubernetes cluster.
+You can install `kubectl` by following the instructions in the
+[Kubernetes documentation](https://kubernetes.io/docs/tasks/tools/).
+
+Additionally, I have my own domain name `stackedge.dev` that I will use to access the application.
+The domain is registered with [Namecheap](https://www.namecheap.com/), but you can use any domain
+name you prefer. Later on I will use the domain to set up a DNS record that points to the IP address
+of the Proxmox server.
+
+## Set Up Proxmox
+
+First, we are going to install Proxmox on the Minis Forum. You will need to have a USB drive with
+at least 8 GB of space to create a bootable Proxmox installer.
+
+### Download Proxmox ISO Image
+
+You can download the latest Proxmox ISO image from the [Proxmox download page](https://www.proxmox.com/en/downloads).
+
+I downloaded the Proxmox VE 8.4 ISO image, which is the latest version at the time of writing this guide.
+
+### Create a Bootable USB Drive
+
+You can use a tool like [Balena Etcher](https://etcher.balena.io/) to create a bootable USB drive from the Proxmox ISO image.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Use Balena Etcher to copy Proxmox ISO
+  image](/proxmox-kubernetes/balena_etcher.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Use Balena Etcher to copy Proxmox ISO image
+    </figcaption>
+  </div>
+</figure>
+
+Insert the USB drive into your computer, open Balena Etcher, select the Proxmox ISO image, and select the USB drive as the target.
+
+The process will take a few minutes to complete, and once it is done, you will have a bootable USB drive with Proxmox.
+
+### Boot from USB Drive
+
+Insert the bootable USB drive into the Minis Forum and power it on. You may need to press a key to enter the BIOS/UEFI settings
+(I used `DEL` or `DELETE` key) and change the boot order to boot from the USB drive. Once you boot from the USB drive
+you will see the Proxmox installer screen.
+
+### Install Proxmox
+
+I decided to install Proxmox on the entire disk, so I selected the option to install Proxmox on the entire disk.
+You can also choose to install Proxmox alongside Windows, but I wanted to have a clean installation of Proxmox.
+
+Choose to install Proxmox in a graphical mode, and follow the prompts to select the language, time zone, and
+keyboard layout.
+
+The most important step is to configure the network settings. You will need to set a hostname, IP address, Netmask,
+Gateway and DNS server. See the following image for reference:
+
+<figure className="flex flex-col items-center article-figure">
+  ![Proxmox Network Setup](/proxmox-kubernetes/pve_setup_network.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Proxmox Network Setup
+    </figcaption>
+  </div>
+</figure>
+
+In my case I set up my as follows:
+
+- **Hostname**: `pve.local`
+- **IP Address**: `192.168.2.42`
+- **Netmask**: `255.255.255.0`
+- **Gateway**: `192.l68.2.254`
+- **DNS Server**: `1.1.1.1` (Cloudflare DNS)
+
+My network interface configured was `vmbr0`, which is the default bridge interface in Proxmox.
+
+After configuring the network settings, you can proceed with the installation. The installer will
+copy the files to the disk and configure the system. This process will take a few minutes to complete.
+
+### Verify Installation
+
+After the installation is complete, you will be prompted to reboot the system. Remove
+the USB drive and reboot the system.
+
+You should see the Proxmox login screen. You can access the Proxmox web interface by opening a web
+browser and navigating to [https://pve.local:8006](https://pve.local:8006) (or the IP address you set
+during the installation [https://192.168.2.42:8006](https://192.168.2.42:8006)).
+
+You will see a warning about the self-signed SSL certificate, you can ignore it and proceed
+to the login screen.
+
+Most probably you will need to log in with the `root` user and the password you set during the installation.
+After logging in, you will see the Proxmox web interface, which looks like this:
+
+<figure className="flex flex-col items-center article-figure">
+  ![Proxmox Web Interface](/proxmox-kubernetes/pve_web_interface.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Proxmox Web Interface
+    </figcaption>
+  </div>
+</figure>
+
+It is also possible to access your Proxmox server using the command line interface (CLI) via SSH.
+You can use any SSH client to connect to your Proxmox server using the IP address you set during
+the installation.
+
+If you are in a Linux or macOS environment, you can use the terminal to connect via SSH:
+
+```bash
+ssh root@192.168.2.42
+```
+
+Or use [Putty](https://www.putty.org/) or any other SSH client on Windows to connect to your Proxmox server.
+
+## Kubernetes Options
+
+One way to use Kubernetes is to install a VM, the other option would be to
+use LXC containers. I decided to use a VM because provides better isolation, more reliable networking,
+more options available such as `kubeadm`, `k3s`, `microk8s`, and easier to manage.
+
+### Exploring Kubernetes Options
+
+My main goal is to set up Kubernetes with flexibility and scalability in mind. There are two options:
+
+**1. Minimum Setup**
+
+I could run both master and worker on a single VM for testing, but for production, I would need
+to separate them.
+
+- 1 VM as Kubernetes master (control plane)
+- 1 VM as Kubernetes worker (node)
+
+**2. Multi-Node Setup**
+
+It is possible to add more worker VMs later as needed.
+
+- 1 VM as Kubernetes master (control plane only)
+- 2+ VMs: k8s-worker-1, k8s-worker-2, ... (for running apps)
+
+Taking into account my hardware and my main goal, I will go with the multi-node setup.
+
+### Hardware Requirements
+
+The hardware requirements per VM would be:
+
+- **CPU**: 2 cores minimum (4+ recommended for production)
+- **RAM**: 4GB minimum (8GB+ recommended for production)
+- **Disk**: 32GB minimum (more if you expect large images/data)
+- **Network**: All VMs on the same Proxmox bridge (e.g., `vmbr0`)
+
+## Set Up the VMs
+
+To create the VMs in Proxmox, you will need to have the Ubuntu Server ISO image ready.
+I will guide you through the process of downloading the ISO, uploading it to Proxmox,
+and creating the VMs.
+
+### Download Latest Ubuntu Server
+
+You can download the latest Ubuntu Server ISO from the [Ubuntu website](https://ubuntu.com/download/server).
+During the time of writing this guide, I used Ubuntu Server 24.04 LTS.
+
+### Upload Ubuntu ISO to Proxmox
+
+To upload the Ubuntu Server ISO to Proxmox, follow these steps:
+
+1. Log in to the Proxmox web interface.
+2. Go to the "Datacenter" node.
+3. Select the storage where you want to upload the ISO (e.g., `pve`).
+4. Double click on `local (pve)` to open the storage view detail.
+5. Click on the "ISO Images" panel.
+6. Click on "Upload" and select the Ubuntu Server ISO file you downloaded.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Proxmox Upload Image](/proxmox-kubernetes/pve_upload_image.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Proxmox Upload Image
+    </figcaption>
+  </div>
+</figure>
+
+### Create the VMs
+
+Follow these steps to create the VMs in Proxmox:
+
+1. In the Proxmox web interface, click on "Create VM".
+2. Fill in the VM details:
+   - **Node**: Select your Proxmox node (e.g., `pve`).
+   - **VM ID**: Leave it as default or set a custom ID.
+   - **Name**: Set a name for the VM (e.g., `k8s-master`, `k8s-worker-1`, etc.).
+3. In the "OS" tab:
+   - Select "Use CD/DVD disc image file (iso)".
+   - Choose the Ubuntu Server ISO you uploaded.
+4. In the "System" tab:
+   - Leave the default settings (BIOS, SCSI controller, etc.).
+5. In the "Hard Disk" tab:
+   - Set the disk size (e.g., 32GB or more).
+   - Select "SCSI" as the bus/driver.
+   - Set "Discard" to "On".
+6. In the "CPU" tab:
+   - Set the number of cores (2 or more).
+   - Set the CPU type (e.g., "host").
+7. In the "Memory" tab:
+   - Set the RAM size (4GB or more).
+8. In the "Network" tab:
+   - Select "virtio" as the model.
+   - Ensure the network bridge is set to `vmbr0` (or your desired bridge).
+9. Click "Finish" to create the VM.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Proxmox Create VM](/proxmox-kubernetes/pve_create_vm.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Proxmox Create VM
+    </figcaption>
+  </div>
+</figure>
+
+The above steps need to be repeated for each VM you want to create. For example, create one
+VM for the Kubernetes master and another for the worker node(s).
+
+After creating the VMs, you will see them listed in the Proxmox web interface under the
+"Datacenter" node. Now, you can start each VM and proceed with the installation of Ubuntu Server.
+
+See the following image for reference:
+
+<figure className="flex flex-col items-center article-figure">
+  ![Proxmox Start VM](/proxmox-kubernetes/pve_start_vm.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Proxmox Start VM
+    </figcaption>
+  </div>
+</figure>
+
+Notice that `openssh-server` might not be installed by default in the Ubuntu Server ISO. You can
+installed in each VM after the installation by running:
+
+```bash
+sudo apt update
+sudo apt install openssh-server
+```
+
+Then you should be able to SSH into the VM using the IP address assigned by Proxmox.
+
+If you want to assign a static IP address to each VM, you can do so by editing the
+`/etc/netplan/01-netcfg.yaml` file in each VM. Here is an example configuration:
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    ens18:
+      dhcp4: no
+      addresses: [192.168.2.31/24]
+      routes:
+        - to: default
+          via: 192.168.2.254
+      nameservers:
+        addresses: [1.1.1.1]
+```
+
+Now that you have your VMs set up, you can proceed to install Kubernetes and all the necessary
+components to run your application stack. The following steps will guide you through the
+process of installing and initialize Kubernetes.
+
+## Install Kubernetes
+
+You can install Kubernetes using `kubeadm`, which is a tool provided by Kubernetes
+to set up a cluster.
+
+The step by step process is as follows:
+
+### 1. Prepare all Nodes (master and workers)
+
+On each VM, run the following commands to prepare the system for Kubernetes installation:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y apt-transport-https ca-certificates curl
+```
+
+Disable swap (Kubernetes requires swap to be disabled):
+
+```bash
+sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
+```
+
+Load kernel modules and set `sysctl` parameters:
+
+```bash
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+sudo tee /etc/sysctl.d/kubernetes.conf <<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+sudo sysctl --system
+```
+
+### 2. Install Container Runtime (`containerd`)
+
+On each VM, install `containerd`:
+
+```bash
+sudo apt install -y containerd
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo systemctl restart containerd
+sudo systemctl enable containerd
+```
+
+### 3. Install Kubernetes Components
+
+On each VM, add the Kubernetes APT repository and install `kubeadm`, `kubelet`, and `kubectl`:
+
+```bash
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
+     sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+```
+
+### 4. Initialize the Master VM
+
+On `k8s-master` VM, run the following command to initialize the Kubernetes master node:
+
+```bash
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+```
+
+Save the output from command `kubeadm join ...` as you will need it to join worker nodes to the cluster.
+Set up `kubectl` for your user:
+
+```bash
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+### 5. Install a Pod Network (e.g., Flannel)
+
+On `k8s-master` VM, run the following command to install Flannel as the pod network:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+```
+
+### 6. Join Worker Nodes to the Cluster
+
+On each worker VM (e.g., `k8s-worker-1`, `k8s-worker-2`), run the `kubeadm join` command you saved earlier:
+
+```bash
+sudo kubeadm join 192.168.2.31:6443 --token zlzx0y.kz330vuj3bl99q31 --discovery-token-ca-cert-hash sha256:fba621ade254678c29648c6a05fdb134af100f0f6b90691d9981e54cf5b63595
+```
+
+### 7. Verify the Cluster
+
+On `k8s-master`, run the following command to verify that all nodes are ready:
+
+```bash
+kubectl get nodes
+```
+
+You should see the master and worker nodes listed with a status of `Ready`, similar to this:
+
+```bash
+gabriel@k8s-master:~$ kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+k8s-master     Ready    control-plane   13h   v1.30.14
+k8s-worker-1   Ready    <none>          26s   v1.30.14
+k8s-worker-2   Ready    <none>          12s   v1.30.14
+```
+
+### Useful Commands
+
+Following commands can be used to check the status of your Kubernetes cluster:
+
+```bash
+# Check nodes status
+kubectl get nodes
+# Check pods in all namespaces
+kubectl get pods -A
+# Check services in all namespaces
+kubectl get services -A
+# Check deployments in all namespaces
+kubectl get deployments -A
+# Check daemonsets in all namespaces
+kubectl get daemonsets -A
+# Check statefulsets in all namespaces
+kubectl get statefulsets -A
+# Check configmaps in all namespaces
+kubectl get configmaps -A
+# Check secrets in all namespaces
+kubectl get secrets -A
+# Check events in all namespaces
+kubectl get events -A
+# Check cluster info
+kubectl cluster-info
+# Check resource usage (requires metrics-server to be installed)
+# Note: You may need to install metrics-server first
+kubectl top nodes
+kubectl top pods -A
+
+# Check logs of a specific pod
+kubectl logs <pod-name> -n <namespace>
+kubectl get pods -n metallb-system -o wide
+# Check logs of the MetalLB speaker pod on worker-1
+kubectl logs -n metallb-system <speaker-pod-on-worker-1>
+# Check the description of the MetalLB speaker pod on worker-1
+kubectl describe pod -n metallb-system <speaker-pod-on-worker-1>
+# Delete the MetalLB speaker pod on worker-1 to force it to restart
+kubectl delete pod -n metallb-system <speaker-pod-on-worker-1>
+```
+
+### Troubleshooting
+
+In case of find the following error:
+
+```bash
+gabriel@k8s-master:~$ kubectl get nodes
+E0703 07:44:09.336495  140900 memcache.go:265] couldn't get current server API group list: Get "https://192.168.2.31:6443/api?timeout=32s": dial tcp 192.168.2.31:6443: connect: connection refused
+The connection to the server 192.168.2.31:6443 was refused - did you specify the right host or port?
+```
+
+This might be related to a known issue with Kubernetes on latests versions.
+In this [thread](https://github.com/kubernetes/kubernetes/issues/125770) they comment about it.
+A way to fix it is [configuring the `systemd` cgroup driver](https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd-systemd).
+The solution would be to edit the `/etc/containerd/config.toml` file and
+set `SystemdCgroup` to `true`:
+
+```bash
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  ...
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+```
+
+Then restart `systemd`:
+
+```bash
+sudo systemctl restart containerd
+```
+
+## Install Nginx on `k8s-master`
+
+On your `k8s-master` VM, run the following commands to install Nginx:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+```
+
+This will create the `ingress-nginx` namespace and deploy the Nginx Ingress Controller in your Kubernetes cluster.
+
+To verify the Ingress Controller is running, you can run:
+
+```bash
+kubectl get pods -n ingress-nginx
+```
+
+To find the external IP address of the Ingress Controller, run:
+
+```bash
+kubectl get svc -n ingress-nginx
+```
+
+You should see an output similar to this:
+
+```bash
+NAME                                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.110.162.161   <none>        80:30853/TCP,443:32421/TCP   81s
+ingress-nginx-controller-admission   ClusterIP   10.105.75.79     <none>        443/TCP                      81s
+```
+
+The Ingress controller is accessible on every node’s IP (e.g., 192.168.2.31, 192.168.2.32, 192.168.2.33) at
+the `NodePort` ports (here, 30853 for HTTP and 32421 for HTTPS). This is not convenient for production use,
+because we need a external IP address or domain name to access the application. Hopefully, we can install
+MetalLB to expose the Ingress controller with a single IP address.
+
+To install MetalLB, run the following commands:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.5/config/manifests/metallb-native.yaml
+```
+
+Configure MetalLB with a pool of IP addresses that it can use to assign to services. Create a file named `metallb-config.yaml`:
+
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  namespace: metallb-system
+  name: my-ip-pool
+spec:
+  addresses:
+    - 192.168.2.240-192.168.2.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  namespace: metallb-system
+  name: l2-advertisement
+spec: {}
+```
+
+Apply the configuration:
+
+```bash
+kubectl apply -f metallb-config.yaml
+```
+
+Then change the `ingress-nginx-controller` service type to `LoadBalancer`:
+
+```bash
+kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"spec": {"type": "LoadBalancer"}}'
+```
+
+Now, MetalLB will assign an IP address from the pool to the Ingress Controller service.
+
+```bash
+kubectl get svc -n ingress-nginx
+```
+
+You will see the `EXTERNAL-IP` column populated with an IP address from the pool you configured (e.g., 192.168.2.242).
+
+```bash
+NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.43.83.206   192.168.2.242   80:31546/TCP,443:30256/TCP   14h
+ingress-nginx-controller-admission   ClusterIP      10.43.2.243    <none>          443/TCP                      14h
+```
+
+## Configure Networking
+
+By default, 192.168.2.42 is only accessible on your local network.
+To access your Kubernetes cluster from outside your local network (e.g., from the internet),
+you need to expose your cluster’s services to the public and route your domain to your cluster.
+
+Following are the possible options to expose your Kubernetes cluster:
+
+- Set up port forwarding on your home/office router to forward HTTP/HTTPS (ports 80/443) to your Proxmox VM/container.
+- Alternatively, set up a reverse proxy (like [Nginx](https://nginx.org/) or [Traefik](https://traefik.io/traefik)) on the Proxmox host or inside a VM/container.
+
+I would recommend using a reverse proxy for better management and security using Nginx.
+
+A summary of how my network looks like is as follows:
+
+<table>
+  <thead>
+    <tr>
+      <th>Host</th>
+      <th>IP Address</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Proxmox Server</td>
+      <td>192.168.2.42</td>
+    </tr>
+    <tr>
+      <td>`k8s-master`</td>
+      <td>192.168.2.31</td>
+    </tr>
+    <tr>
+      <td>`k8s-worker-1`</td>
+      <td>192.168.2.32</td>
+    </tr>
+    <tr>
+      <td>`k8s-worker-2`</td>
+      <td>192.168.2.33</td>
+    </tr>
+    <tr>
+      <td>`EXTERNAL-IP (MetalLB)`</td>
+      <td>192.168.2.242</td>
+    </tr>
+  </tbody>
+</table>
+
+I decided to use my `k8s-master` VM to run the reverse proxy, so I will install Nginx on it.
+
+**Set Up Port Forwarding on Your Router**
+
+If you want to access your Kubernetes cluster from outside your local network, you need to set up port forwarding on your router.
+This will forward incoming traffic on ports 80 (HTTP) and 443 (HTTPS) to the IP address of your Proxmox server (192.168.2.242).
+
+<figure className="flex flex-col items-center article-figure">
+  ![Router Port Forwarding](/proxmox-kubernetes/router_port_forwarding.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Router Port Forwarding
+    </figcaption>
+  </div>
+</figure>
+
+## Update DNS
+
+In your domain registrar (for **stackedge.dev**), create a DNS record (A or CNAME) pointing **phonic-ai.stackedge.dev** to
+your public IP address (the one assigned by your ISP).
+If your public IP is dynamic, consider using a dynamic DNS service.
+
+Below you can find my configuration in [Namecheap](https://www.namecheap.com). In my case, I need to port forward the
+traffic from my router to your public ip. You can see your public ip in: [whatismyip](https://www.whatismyip.com/).
+And test your DNS in [dnschecker](https://dnschecker.org/).
+
+<figure className="flex flex-col items-center article-figure">
+  ![DNS Configuration](/proxmox-kubernetes/dns_config.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      DNS Configuration
+    </figcaption>
+  </div>
+</figure>
+
+## SSL/TLS (HTTPS)
+
+To get your own SSL/TLS certificate for your domain (e.g., **phonic-ai.stackedge.dev**) in Kubernetes,
+the most common and automated way is to use `cert-manager` with **Let's Encrypt**.
+This will automatically issue and renew free certificates for your Ingress resources.
+
+To install `cert-manager`, run the following commands in your `k8s-master` VM:
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+```
+
+After a minute or two, check the status of the `cert-manager` pods:
+
+```bash
+kubectl get pods -n cert-manager
+```
+
+Now, create a `ClusterIssuer` resource to configure `cert-manager` to use **Let's Encrypt**,
+the file name is `letsencrypt-clusterissuer.yaml`:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: your-email@example.com # <-- change this to your email
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+```
+
+Apply the `ClusterIssuer` configuration:
+
+```bash
+kubectl apply -f letsencrypt-clusterissuer.yaml
+```
+
+Now, you can create an Ingress resource for your application that uses the `ClusterIssuer` to automatically
+issue a certificate for your domain. Create a file named `phonic-ai-ingress.yaml`:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  rules:
+    - host: phonic-ai.stackedge.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-service
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - phonic-ai.stackedge.dev
+      secretName: phonic-ai-tls
+```
+
+Apply the Ingress configuration:
+
+```bash
+kubectl apply -f phonic-ai-ingress.yaml
+```
+
+This will create an Ingress resource that routes traffic to your application and automatically provisions a TLS certificate
+for your domain using **Let's Encrypt**.
+
+You can check the status of the certificate by running:
+
+```bash
+kubectl describe certificate phonic-ai-tls
+```
+
+## Deploying the Application
+
+First, you need to have your own application Docker images ready and pushed to a container registry
+(e.g., Docker Hub, GitHub Container Registry, etc.).
+
+In my case, I have already built and pushed the Docker images for my Phonic AI application to Docker Hub.
+
+If you are curious about my container images, you can find them in my GitHub repository:
+[phonic-ai-backend](https://hub.docker.com/r/gabrielmunumel/phonic-ai-backend), and
+[phonic-ai-frontend](https://hub.docker.com/r/gabrielmunumel/phonic-ai-frontend).
+
+To deploy the application using [Helm Charts](https://helm.sh/), you can use the following steps:
+
+```bash
+helm install phonic-ai ./phonic-ai-chart
+# or upgrade
+helm upgrade --install phonic-ai ./phonic-ai-chart
+```
+
+## Accessing the Application
+
+Open [phonic-ai](https://phonic-ai.stackedge.dev/portfolio/phonic-ai/) in your browser.
+If you see your app, the migration is successful.
+
+## Conclusion
+
+In this guide, we have covered the process of setting up a Kubernetes cluster on Proxmox using VMs.
+We have also installed Nginx as an Ingress Controller, configured MetalLB for load balancing,
+and set up SSL/TLS using `cert-manager` with **Let's Encrypt**.
+We also deployed a sample application using Helm Charts and accessed it via a domain name.
+This setup provides a solid foundation for running your own Kubernetes cluster on Proxmox, allowing you to
+experiment with containerization and Kubernetes without relying on cloud providers like AWS.
+
+Even thought this is a working example, to automatize the deployment of the Kubernetes cluster,
+you can use tools like [Terraform](https://www.terraform.io/) or [Ansible](https://www.ansible.com/) to automate the
+infrastructure provisioning and configuration management.
