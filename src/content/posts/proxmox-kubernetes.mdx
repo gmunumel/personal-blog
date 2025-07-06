@@ -596,11 +596,11 @@ Now, MetalLB will assign an IP address from the pool to the Ingress Controller s
 kubectl get svc -n ingress-nginx
 ```
 
-You will see the `EXTERNAL-IP` column populated with an IP address from the pool you configured (e.g., 192.168.2.242).
+You will see the `EXTERNAL-IP` column populated with an IP address from the pool you configured (e.g., 192.168.2.240).
 
 ```bash
 NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP     PORT(S)                      AGE
-ingress-nginx-controller             LoadBalancer   10.43.83.206   192.168.2.242   80:31546/TCP,443:30256/TCP   14h
+ingress-nginx-controller             LoadBalancer   10.43.83.206   192.168.2.240   80:31546/TCP,443:30256/TCP   14h
 ingress-nginx-controller-admission   ClusterIP      10.43.2.243    <none>          443/TCP                      14h
 ```
 
@@ -645,7 +645,7 @@ A summary of how my network looks like is as follows:
     </tr>
     <tr>
       <td>`EXTERNAL-IP (MetalLB)`</td>
-      <td>192.168.2.242</td>
+      <td>192.168.2.240</td>
     </tr>
   </tbody>
 </table>
@@ -655,7 +655,7 @@ I decided to use my `k8s-master` VM to run the reverse proxy, so I will install 
 **Set Up Port Forwarding on Your Router**
 
 If you want to access your Kubernetes cluster from outside your local network, you need to set up port forwarding on your router.
-This will forward incoming traffic on ports 80 (HTTP) and 443 (HTTPS) to the IP address of your Proxmox server (192.168.2.242).
+This will forward incoming traffic on ports 80 (HTTP) and 443 (HTTPS) to the IP address of your Proxmox server (192.168.2.240).
 
 <figure className="flex flex-col items-center article-figure">
   ![Router Port Forwarding](/proxmox-kubernetes/router_port_forwarding.png)
@@ -795,6 +795,15 @@ helm upgrade --install phonic-ai ./phonic-ai-chart
 
 Open [phonic-ai](https://phonic-ai.stackedge.dev/portfolio/phonic-ai/) in your browser.
 If you see your app, the migration is successful.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Running Application in Kubernetes](/proxmox-kubernetes/application.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Running Application in Kubernetes
+    </figcaption>
+  </div>
+</figure>
 
 ## Conclusion
 
