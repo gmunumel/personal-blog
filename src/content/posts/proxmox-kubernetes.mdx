@@ -14,7 +14,7 @@ date: 2025-02-01
 I have been using AWS with EKS to run my Kubernetes clusters for a while, but I wanted to
 explore running Kubernetes on my own hardware. The main reason for this is to have
 more control over the infrastructure, reduce costs, and learn more about Kubernetes and containerization.
-Additionally, running EKS have an increasing cost as the number of clusters and nodes grow,
+Additionally, running EKS has an increasing cost as the number of clusters and nodes grow,
 which can be a concern for my personal usage. So I decided to set up a Kubernetes cluster on Proxmox.
 
 [Proxmox](https://www.proxmox.com/en/) is a powerful open-source virtualization platform that allows you to run
@@ -24,8 +24,8 @@ In this guide, I will walk you through the process of setting up a Kubernetes cl
 
 ## Minis Forum
 
-I want to mention the hardware I am using for this setup so you have a reference that can help
-you to take a decision. I have a [Minis Forum](https://www.minisforum.com/)
+I want to mention the hardware I am using for this setup so you have a reference that can help you make a decision.
+I have a [Minis Forum](https://www.minisforum.com/)
 mini PC Pro.
 
 <figure className="flex flex-col items-center article-figure">
@@ -50,17 +50,17 @@ The technical details are:
 As you can see it comes with Windows 11 Pro pre-installed, but I will be installing Proxmox on it to run
 my Kubernetes cluster.
 
-Note that for better performance of Kubernetes cluster it is recommend to have at least 32 GB of memory, optimal
+Note that for better performance of Kubernetes cluster it is recommended to have at least 32 GB of memory, optimal
 would be 64 GB. In general, my mini pc is powerful enough to run multiple virtual machines and containers,
 and it has a good network interface to handle the traffic.
 
 ## Pre-requisites
 
-First at all you need to have a deployable project that you can use to test your Kubernetes cluster.
+First at all, you need to have a deployable project that you can use to test your Kubernetes cluster.
 I will use my [Phonic AI](https://github.com/gmunumel/phonic-ai) project, which is a simple
-application that transcript live audio to text using OpenAI's Whisper model. The projects contains
-a frontend using React, a backed using FastAPI, and an ai module that handles the audio processing using
-Whisper OpenAI model.
+application that transcript live audio to text using OpenAI's Whisper model. The project contains
+a frontend using React, a backend using FastAPI, and an ai module that handles the audio processing using
+OpenAI Whisper model.
 
 The project was already deployed in AWS EKS, so I will use the same Docker images to deploy it
 in my Kubernetes cluster.
@@ -117,7 +117,7 @@ You can also choose to install Proxmox alongside Windows, but I wanted to have a
 Choose to install Proxmox in a graphical mode, and follow the prompts to select the language, time zone, and
 keyboard layout.
 
-The most important step is to configure the network settings. You will need to set a hostname, IP address, Netmask,
+One of the most important steps is configuring the network settings. You will need to set a hostname, IP address, Netmask,
 Gateway and DNS server. See the following image for reference:
 
 <figure className="flex flex-col items-center article-figure">
@@ -129,12 +129,12 @@ Gateway and DNS server. See the following image for reference:
   </div>
 </figure>
 
-In my case I set up my as follows:
+I set up my network as follows:
 
 - **Hostname**: `pve.local`
 - **IP Address**: `192.168.2.42`
 - **Netmask**: `255.255.255.0`
-- **Gateway**: `192.l68.2.254`
+- **Gateway**: `192.168.2.254`
 - **DNS Server**: `1.1.1.1` (Cloudflare DNS)
 
 My network interface configured was `vmbr0`, which is the default bridge interface in Proxmox.
@@ -180,8 +180,8 @@ Or use [Putty](https://www.putty.org/) or any other SSH client on Windows to con
 
 ## Kubernetes Options
 
-One way to use Kubernetes is to install a VM, the other option would be to
-use LXC containers. I decided to use a VM because provides better isolation, more reliable networking,
+One way to use Kubernetes is to install a VM; the other option would be to
+use LXC containers. I decided to use a VM because it provides better isolation, more reliable networking,
 more options available such as `kubeadm`, `k3s`, `microk8s`, and easier to manage.
 
 ### Exploring Kubernetes Options
@@ -203,7 +203,7 @@ It is possible to add more worker VMs later as needed.
 - 1 VM as Kubernetes master (control plane only)
 - 2+ VMs: k8s-worker-1, k8s-worker-2, ... (for running apps)
 
-Taking into account my hardware and my main goal, I will go with the multi-node setup.
+Considering my hardware and objectives, I will go with the multi-node setup.
 
 ### Hardware Requirements
 
@@ -252,7 +252,7 @@ Follow these steps to create the VMs in Proxmox:
 1. In the Proxmox web interface, click on "Create VM".
 2. Fill in the VM details:
    - **Node**: Select your Proxmox node (e.g., `pve`).
-   - **VM ID**: Leave it as default or set a custom ID.
+   - **VM ID**: Leave it at the default value or choose a custom ID.
    - **Name**: Set a name for the VM (e.g., `k8s-master`, `k8s-worker-1`, etc.).
 3. In the "OS" tab:
    - Select "Use CD/DVD disc image file (iso)".
@@ -300,7 +300,7 @@ See the following image for reference:
 </figure>
 
 Notice that `openssh-server` might not be installed by default in the Ubuntu Server ISO. You can
-installed in each VM after the installation by running:
+install it in each VM after the installation by running:
 
 ```bash
 sudo apt update
@@ -335,7 +335,7 @@ process of installing and initialize Kubernetes.
 You can install Kubernetes using `kubeadm`, which is a tool provided by Kubernetes
 to set up a cluster.
 
-The step by step process is as follows:
+The step-by-step process is as follows:
 
 ### 1. Prepare all Nodes (master and workers)
 
@@ -405,7 +405,7 @@ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
 
 Save the output from command `kubeadm join ...` as you will need it to join worker nodes to the cluster.
-Set up `kubectl` for your user:
+Set up `kubectl` configuration for your current user:
 
 ```bash
 mkdir -p $HOME/.kube
@@ -498,7 +498,7 @@ E0703 07:44:09.336495  140900 memcache.go:265] couldn't get current server API g
 The connection to the server 192.168.2.31:6443 was refused - did you specify the right host or port?
 ```
 
-This might be related to a known issue with Kubernetes on latests versions.
+This might be related to a known issue with Kubernetes on latest versions.
 In this [thread](https://github.com/kubernetes/kubernetes/issues/125770) they comment about it.
 A way to fix it is [configuring the `systemd` cgroup driver](https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd-systemd).
 The solution would be to edit the `/etc/containerd/config.toml` file and
@@ -549,7 +549,8 @@ ingress-nginx-controller-admission   ClusterIP   10.105.75.79     <none>        
 
 The Ingress controller is accessible on every node’s IP (e.g., 192.168.2.31, 192.168.2.32, 192.168.2.33) at
 the `NodePort` ports (here, 30853 for HTTP and 32421 for HTTPS). This is not convenient for production use,
-because we need a external IP address or domain name to access the application. Hopefully, we can install
+since using random ports on multiple nodes is hard to manage or route traffic to in production.
+Thus, we need an external IP address or domain name to access the application. Fortunately, we can install
 MetalLB to expose the Ingress controller with a single IP address.
 
 To install MetalLB, run the following commands:
@@ -632,19 +633,19 @@ A summary of how my network looks like is as follows:
       <td>192.168.2.42</td>
     </tr>
     <tr>
-      <td>`k8s-master`</td>
+      <td>k8s-master</td>
       <td>192.168.2.31</td>
     </tr>
     <tr>
-      <td>`k8s-worker-1`</td>
+      <td>k8s-worker-1</td>
       <td>192.168.2.32</td>
     </tr>
     <tr>
-      <td>`k8s-worker-2`</td>
+      <td>k8s-worker-2</td>
       <td>192.168.2.33</td>
     </tr>
     <tr>
-      <td>`EXTERNAL-IP (MetalLB)`</td>
+      <td>EXTERNAL-IP (MetalLB)</td>
       <td>192.168.2.240</td>
     </tr>
   </tbody>
@@ -673,7 +674,7 @@ your public IP address (the one assigned by your ISP).
 If your public IP is dynamic, consider using a dynamic DNS service.
 
 Below you can find my configuration in [Namecheap](https://www.namecheap.com). In my case, I need to port forward the
-traffic from my router to your public ip. You can see your public ip in: [whatismyip](https://www.whatismyip.com/).
+traffic from my router to my public ip. You can see your public ip in: [whatismyip](https://www.whatismyip.com/).
 And test your DNS in [dnschecker](https://dnschecker.org/).
 
 <figure className="flex flex-col items-center article-figure">
@@ -814,6 +815,6 @@ We also deployed a sample application using Helm Charts and accessed it via a do
 This setup provides a solid foundation for running your own Kubernetes cluster on Proxmox, allowing you to
 experiment with containerization and Kubernetes without relying on cloud providers like AWS.
 
-Even thought this is a working example, to automatize the deployment of the Kubernetes cluster,
+Even though this is a working example, to automatize the deployment of the Kubernetes cluster,
 you can use tools like [Terraform](https://www.terraform.io/) or [Ansible](https://www.ansible.com/) to automate the
 infrastructure provisioning and configuration management.
