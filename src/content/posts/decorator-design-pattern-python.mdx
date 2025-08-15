@@ -1,0 +1,435 @@
+---
+title: Decorator Design Pattern in Python
+tags:
+  - python
+  - design-patterns
+  - decorators
+synopsis: >
+  This article explores the decorator pattern in Python, demonstrating its use cases and benefits for code organization and reusability.
+date: 2025-01-02
+---
+
+# Decorator Design Pattern in Python
+
+In this article, we explore the decorator design pattern in Python, a versatile and powerful
+technique for dynamically modifying the behavior of functions or methods without altering their source code.
+Decorators are a core feature in Python and are frequently used for logging, access control, memoization,
+performance measurement, and many other tasks.
+
+We will first clarify the distinction between the general decorator design pattern and Python’s built-in
+decorator feature. Then, we will walk through how Python decorators implement the underlying
+pattern using closures, the `nonlocal` keyword, and built-in tools like `functools.wraps` and `functools.cache`.
+By the end, you will have both a conceptual understanding of the pattern and practical
+examples you can apply directly to your own code.
+
+## Decorator Design Pattern
+
+The decorator pattern is a structural design pattern
+that allows behavior to be added to individual objects, either statically or dynamically, without affecting the behavior of other objects
+from the same class. Python decorators, on the other hand, are a specific implementation of this pattern using functions.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Decorator Design
+  Pattern](/decorator-design-pattern-python/decorator_design_pattern.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Decorator Design Pattern (abstract classes are in italics)
+    </figcaption>
+  </div>
+</figure>
+
+The image illustrates the following facts:
+
+- Each component can be used on its own or wrapped by a decorator.
+- The `ConcreteComponent` is the object we are going to dynamically add new behavior to. It extends `Component`.
+- Each decorator _HAS-A_ (wraps) a component. Meaning the decorator has an instance variable that holds a reference to a component.
+- `Decorator`s implement the same interface or abstract class as the component they are going to decorate.
+- The `ConcreteDecorator` inherits (from the `Decorator` class) an instance variable for the thing it decorates.
+- `Decorator`s can add new methods.
+
+Much of this complexity is needed for Object Oriented Programming languages because they do not have a
+built-in way to modify behavior at runtime. Next, we will see how Python decorators implement the
+decorator pattern using functions, which are first-class citizens in Python.
+
+## Python Decorator
+
+Since Python 2.4, decorators have been a part of the language, allowing you to wrap a function or method with another function. Python core
+developers chose to reuse the term "decorator" for a completely unrelated feature they were adding to the language. Python decorators
+can be easily implemented in a dynamic language like Python, where functions are [first-class citizens](https://www.geeksforgeeks.org/first-class-functions-python/).
+
+### Definition
+
+A decorator is essentially a class that is an _adapter_ (see [Adapter Pattern](https://python-patterns.guide/gang-of-four/composition-over-inheritance/#solution-1-the-adapter-pattern)),
+that implements the same interface as the object it wraps and delegates method calls to the wrapped object.
+It can also add additional behavior before or after the method call.
+
+Some examples of decorators include:
+
+- **Logging**: Automatically log function calls and their arguments.
+- **Access Control**: Check user permissions before allowing access to a function.
+- **Memoization**: Cache the results of expensive function calls and return the cached result when the same inputs occur again.
+
+Python decorators are typically defined using the `@decorator_name` syntax above a function definition,
+which is syntactic sugar for passing the function to the decorator. In the example below, a decorator named `decorate`
+
+```python
+# no-run
+@decorate
+def my_function():
+    print("Running my_function()")
+```
+
+has the same effect as:
+
+```python
+# no-run
+def my_function():
+    print("Running my_function()")
+
+my_function = decorate(my_function)
+```
+
+The end result is the same: `my_function` is now wrapped by the `decorate` function.
+
+A decorator usually replaces a function with a new function that adds some functionality before or after the original function call.
+
+```python
+def decorate(func):
+    def inner():
+        print("Running inner()")
+    return inner
+
+@decorate
+def my_function():
+    print("Running my_function()")
+
+my_function()
+print(my_function)
+```
+
+You would expect to see the output `Running my_function()`, but instead you see `Running inner()`. This is because the `my_function` has
+been replaced by the `inner` function defined in the `decorate` function.
+
+### Runtime Execution
+
+A key aspect of decorators is that they are executed at runtime, meaning that the decorator function is called when the decorated function is defined,
+not when it is called. This allows decorators to modify the behavior of functions dynamically.
+
+```python
+# decorator_example.py
+list_decorators = []
+
+def decorate(func):
+    print(f"Running decorate({func})")
+    list_decorators.append(func)
+    return func
+
+@decorate
+def my_f1():
+    print("Running my_f1()")
+
+@decorate
+def my_f2():
+    print("Running my_f2()")
+
+def my_f3():
+    print("Running my_f3()")
+
+def main():
+    print("Running main()")
+    print("list_decorators: ", list_decorators)
+    my_f1()
+    my_f2()
+    my_f3()
+
+if __name__ == "__main__":
+    main()
+```
+
+Note that the `decorate` function is called when the `my_f1` and `my_f2` functions are defined, not when they are called. When
+`decorate` is called, it prints the function being decorated and appends it to the `list_decorators`.
+
+If the file is imported as a module and not as a script, the output will be:
+
+```bash
+>>> import decorator_example.py
+Running decorate(<function my_f1 at 0x...>)
+Running decorate(<function my_f2 at 0x...>)
+
+>>> print(decorator_example.list_decorators)
+[<function my_f1 at 0x...>, <function my_f2 at 0x...>]
+```
+
+See how the `decorate` function is called as soon as the module is imported, not when the functions are called.
+
+### Closures
+
+A closure is a function that retains the bindings of the _free variables_ that exist when the function is defined, so that they
+can be used later when the function is invoked and the defining scope is no longer available.
+
+Closures are often used in decorators to capture the state of variables at the time the decorator is applied. In the following example,
+we create a decorator that captures a value in a closure:
+
+```python
+def decorator_with_closure():
+    store = []
+    def decorator(new_value):
+        store.append(new_value)
+        return store
+    return decorator
+
+values = decorator_with_closure()
+print(values("a"))
+print(values("b"))
+```
+
+The closure is the body of function `decorator_with_closure` (expect for the instruction `return decorator`), which captures the _free variable_ `store`.
+When `values` is called with a new value, it appends the value to `store` and returns the updated list.
+
+<figure className="flex flex-col items-center article-figure">
+  ![Closure](/decorator-design-pattern-python/closure.png)
+  <div>
+    <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+      Closure
+    </figcaption>
+  </div>
+</figure>
+
+Internally, Python stores the closure in a `__closure__` attribute of the function object. Names of local
+and free variables are stored in the `__code__` attribute.
+
+```bash
+>>> values.__closure__
+(<cell at 0x...: list object at 0x...>,)
+>>> values.__code__.co_varnames
+(,)
+>>> values.__code__.co_freevars
+('store',)
+```
+
+In the next section we will see how to assign a value to a local variable in the closure.
+
+### `nonlocal` Keyword
+
+The `nonlocal` keyword is used in Python to declare that a variable refers to a variable in the nearest enclosing scope that is not global.
+Using the example above, we can modify the `store` variable in the closure to allow it to be modified directly: `store += new_value`
+instead of `store.append(new_value)`. This will raise an error if we try to modify `store` directly without declaring it as `nonlocal`.
+Below you will see the example and the error raised.
+
+```python
+def decorator_with_closure():
+    store = []
+    def decorator(new_value):
+        store += new_value
+        return store
+    return decorator
+
+values = decorator_with_closure()
+print(values("a"))
+```
+
+Python complains that it cannot access `store`. In this case, the instruction `store += new_value` is trying to do a `store = store + new_value`, which
+is not allowed because `store` is a local variable in the closure. But why is this different from `store.append(new_value)`?
+The reason is that with `append` we never assigned the `store` variable, we only called `store.append` and used it, we take advantage of mutability of
+lists. Whereas with `+=` we are trying to reassign the `store` variable, which is not allowed because it is a local variable in the closure.
+
+A solution is to declare `store` as `nonlocal`:
+
+```python
+def decorator_with_closure():
+    store = []
+    def decorator(new_value):
+        nonlocal store
+        store += new_value
+        return store
+    return decorator
+
+values = decorator_with_closure()
+print(values("a"))
+```
+
+### A Modern Example
+
+The following is a modern example to calculate a factorial using a decorator, which is a common use case for decorators in Python.
+
+```python
+import time
+
+def time_factorial(func):
+    def wrapper(n):
+        start = time.perf_counter()
+        result = func(n)
+        end = time.perf_counter()
+        print(f"factorial({n}) took {end - start:.6f} seconds")
+        return result
+    return wrapper
+
+@time_factorial
+def factorial(n):
+    """Calculate factorial recursively."""
+    if n == 0:
+        return 1
+    return n * factorial(n-1)
+
+print(factorial(5))
+print(factorial(6))
+print(f"Function name: {factorial.__name__}")
+print(f"The docstring is: {factorial.__doc__}")
+```
+
+In this example, the `time_factorial` decorator measures the time taken to compute the factorial of a number.
+The `factorial` function is decorated with `@time_factorial`, which means that when `factorial` is called,
+it will first execute the `wrapper` function defined in `time_factorial`. Attribute `__name__`
+will have the name of the wrapped function: `wrapper`, while attribute `__doc__` is `None` because there is no docstring
+in the wrapped function `wrapper`. If the time measurement values
+are not printed correctly most likely is a problem with [pyodide](https://github.com/pyodide/pyodide) web
+assembly implementation (for real timing measurements, use a native Python environment).
+
+### `functools.wraps` Decorator
+
+`functools` provides a `wraps` decorator that can be used to preserve the metadata of the original function
+when it is wrapped by a decorator. This is useful for debugging and introspection, as it allows you to see
+the original function's name, docstring, and other attributes.
+
+The example above can be modified to use `functools.wraps` to preserve the metadata of the original function:
+
+```python
+import time
+import functools
+
+def time_factorial(func):
+    @functools.wraps(func)
+    def wrapper(n):
+        start = time.perf_counter()
+        result = func(n)
+        end = time.perf_counter()
+        print(f"factorial({n}) took {end - start:.6f} seconds")
+        return result
+    return wrapper
+
+@time_factorial
+def factorial(n):
+    """Calculate factorial recursively."""
+    if n == 0:
+        return 1
+    return n * factorial(n-1)
+
+print(factorial(5))
+print(factorial(6))
+print(f"Function name: {factorial.__name__}")
+print(f"The docstring is: {factorial.__doc__}")
+```
+
+Thanks to the `wraps` decorator, the `__name__` attribute will match that of the
+original function, and the `__doc__` attribute will also be preserved.
+
+### `functools.cache` Decorator
+
+_Memoization_ is an optimization technique that involves caching the results of expensive function
+calls and returning the cached result when the same inputs occur again.
+The `functools.cache` decorator in Python provides a simple way to apply memoization to a function.
+
+Consider the following example of a slow recursive function to calculate the factorial of a number:
+
+```python
+import time
+import functools
+
+def time_fibonacci(func):
+    @functools.wraps(func)
+    def wrapper(n):
+        start = time.perf_counter()
+        result = func(n)
+        end = time.perf_counter()
+        print(f"fibonacci({n}) took {end - start:.6f} seconds")
+        return result
+    return wrapper
+
+@time_fibonacci
+def slow_fibonacci(n):
+    if n < 2:
+        return n
+    return slow_fibonacci(n-2) + slow_fibonacci(n-1)
+
+print(slow_fibonacci(6))
+```
+
+In this example, the call to `fibonacci(1)` occurs eight times, `fibonacci(2)` is five times, etc. We can
+optimize this by using the `functools.cache` decorator to cache the results of the `slow_fibonacci` function.
+
+```python
+import time
+import functools
+
+def time_fibonacci(func):
+    @functools.wraps(func)
+    def wrapper(n):
+        start = time.perf_counter()
+        result = func(n)
+        end = time.perf_counter()
+        print(f"factorial({n}) took {end - start:.6f} seconds")
+        return result
+    return wrapper
+
+@functools.cache
+@time_fibonacci
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-2) + fibonacci(n-1)
+
+print(fibonacci(6))
+```
+
+As you can see there is a significant improvement in performance when using caching, no additionally calls are
+made when the same parameter is used again.
+
+### Monkey Patching
+
+Monkey patching is a technique to modify or extend the behavior of libraries or modules at runtime. This can
+be useful for testing, debugging, or adding new functionality to existing code without modifying the
+original source.
+
+Here's a simple example of monkey patching in Python:
+
+```python
+class Dog:
+    def bark(self):
+        return "Woof!"
+
+def new_bark(self):
+    return "Meow!"
+
+# Apply monkey patch
+Dog.bark = new_bark
+
+dog = Dog()
+print(dog.bark())
+```
+
+In this example, we define a `Dog` class with a `bark` method. We then create a
+new function `new_bark` and replace the original `bark` method with the new one. As a result, when we call `dog.bark()`, it now returns "Meow!" instead of "Woof!".
+
+There are some caveats to be aware of when using monkey patching. Since it modifies the original
+class or module at runtime, it can lead to unexpected behavior, especially if other parts of the
+code rely on the original implementation. Additionally, monkey patches are not always easy to track
+down, making debugging more challenging.
+
+# Conclusion
+
+We have seen how the decorator design pattern provides a clean, flexible way to extend or modify
+the behavior of functions and methods in Python without touching their original implementation.
+By combining the principles of the classic pattern with Python’s native decorator syntax, you
+can create solutions that are both elegant and reusable.
+
+From measuring execution time, to caching expensive results, to dynamically altering class methods,
+decorators open the door to powerful runtime modifications. As with monkey patching and other
+dynamic techniques, they should be used thoughtfully, but when applied well, decorators
+can greatly improve code organization, readability, and maintainability.
+
+# References
+
+- [Fluent Python, 2nd Edition](https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/)
+- [The Decorator Pattern](https://python-patterns.guide/gang-of-four/decorator-pattern/)
+- [Design Patterns - _Gang of Four_](https://en.wikipedia.org/wiki/Design_Patterns)
+- [Head First Design Patterns, 2nd Edition](https://www.oreilly.com/library/view/head-first-design/9781492077992/)
