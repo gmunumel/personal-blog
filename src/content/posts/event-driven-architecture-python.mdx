@@ -1,0 +1,659 @@
+---
+title: Event Driven Architecture in Python
+tags:
+  - python
+  - event-driven
+  - architecture
+synopsis: >
+  This article explores event-driven architecture in Python, demonstrating its use cases and benefits for building responsive and scalable applications.
+date: 2025-05-15
+---
+
+# Event Driven Architecture in Python
+
+In this article I want to explore the key concepts, implementation strategies, and benefits of **Event-Driven Architecture (EDA)** in Python, along with
+practical examples and references for further reading.
+
+In every medium to large size organization you most probably generate, request, and handle a lot of data. This data is often generated
+by various systems, applications, and services, and it can be structured or unstructured. Along with business cases this huge amount of data
+needs to be processed, analyzed, and acted upon in a timely manner. This is where EDA comes into play. EDA is a design pattern that allows systems to
+respond to events in real-time, enabling organizations to react quickly to changes and make data-driven decisions.
+
+## Key Concepts of Event Driven Architecture
+
+1. **Events**: Events are significant changes in state or conditions within a system. They should be meaningful and actionable and reflect an entity within
+   a [bounded context](/posts/handle-multiple-bounded-contexts/#what-is-a-bounded-context). They can be user actions, system-generated events, or messages from other services.
+2. **Event Producers**: These are components or services that generate events. They can be user interfaces, backend services,
+   or external systems.
+3. **Event Consumers**: These are components or services that listen for and respond to events. They can trigger actions,
+   update state, or communicate with other services.
+
+## Benefits of Event Driven Architecture
+
+1. **Scalability**: EDA allows you to scale individual components independently, making it easier to handle increased load and traffic.
+2. **Loose Coupling**: EDA promotes loose coupling between components, making it easier to change or replace individual services without affecting
+   the entire system.
+3. **Responsiveness**: EDA enables real-time processing of events, allowing applications to respond quickly to changes in state or user actions.
+
+## Drawbacks of Event Driven Architecture
+
+1. **Complexity**: EDA can introduce additional complexity in terms of system design and implementation. Managing event flows,
+   ensuring event delivery, and handling failures can be challenging.
+2. **Debugging**: Debugging event-driven systems can be more difficult compared to traditional request-response architectures. The asynchronous
+   nature of events can make it hard to trace the flow of execution.
+3. **Latency**: While EDA enables real-time processing, it can also introduce latency due to the asynchronous nature of event handling.
+   This can be a concern for time-sensitive applications.
+
+# Event Brokers versus Message Brokers
+
+Event brokers and message brokers are both intermediaries that facilitate communication between event producers and consumers,
+but they have different use cases and characteristics.
+
+- **Event Brokers**: These are designed to handle events in real-time and provides an ordered log of facts. They allow
+  multiple consumers to listen for specific events and react accordingly. Event brokers typically provide features like event filtering,
+  transformation, and routing. **Provides stateful processing and can maintain the order of events.**
+
+  <figure className="flex flex-col items-center article-figure">
+    ![Event Broker](/event-driven-architecture-python/event_broker.png)
+    <div>
+      <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+        Event Broker
+      </figcaption>
+    </div>
+  </figure>
+
+- **Message Brokers**: These are more focused on reliable message delivery and enable systems to communicate across a network
+  through publish/subscribe message queues. They ensure that messages are delivered to the intended recipient, even in the presence of failures.
+  Message brokers typically provide features like message queuing, persistence, and acknowledgment. **Provides stateless processing and can handle
+  large volumes of messages.**
+
+  <figure className="flex flex-col items-center article-figure">
+    ![Message Broker](/event-driven-architecture-python/message_broker.png)
+    <div>
+      <figcaption className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+        Message Broker
+      </figcaption>
+    </div>
+  </figure>
+
+# Event Brokers in Python
+
+## Alternatives to Event Broker in Python
+
+Python provides several libraries and frameworks to implement event brokers, including:
+
+- **Kafka**: A distributed event streaming platform that can be used to build real-time data pipelines and streaming applications.
+  Python client: `confluent-kafka`.
+- **Apache Pulsar**: A distributed messaging and event streaming platform that is designed for scalability and low latency.
+  It supports multi-tenancy and provides strong ordering guarantees. Python client: `pulsar-client`.
+- **Redpanda**: A Kafka-compatible event streaming platform that is designed for high performance and low latency.
+  Python client: `redpanda`.
+- **EventStoreDB**: An event sourcing database that is designed for storing and processing event data. It provides strong consistency and supports
+  complex event processing. Python client: `eventstore-grpc`.
+- **Redis Streams**: A data structure that allows you to manage and process streams of data in Redis. It provides features like
+  message acknowledgment and consumer groups. Python client: `redis-py`.
+
+## Implementing an Event Broker in Python
+
+I will do a basic implementation following **Redis Streams** because it provides an ordered, append-only log with persistence and replay via
+consumer groups which is useful for event sourcing.
+
+### Model
+
+Following is the model definition for the event:
+
+```python
+# no-run
+# src/event_broker/models/event_payload.py
+import json
+import time
+from dataclasses import dataclass
+from typing import Any, Dict
+
+
+@dataclass(frozen=True)
+class Event:
+    type: str
+    data: Dict[str, Any]
+    ts_ms: int = int(time.time() * 1000)
+
+    def to_redis_fields(self) -> Dict[str, str]:
+        return {
+            "type": self.type,
+            "ts": str(self.ts_ms),
+            "data": json.dumps(self.data, separators=(",", ":"), ensure_ascii=False),
+        }
+```
+
+### Producer
+
+The producer is responsible for publishing events to the message broker.
+
+```python
+# no-run
+# src/event_broker/producers/event_producer.py
+import redis.asyncio as redis
+
+from src.event_broker.config import MAXLEN, STREAM_KEY
+from src.event_broker.models.event_payload import Event
+
+
+class EventProducer:
+    def __init__(self, client: redis.Redis):
+        self.r = client
+
+    async def publish(self, event: Event) -> str:
+        # XADD with MAXLEN ~ trim to avoid unbounded growth
+        msg_id = await self.r.xadd(
+            STREAM_KEY,
+            {k: str(v) for k, v in event.to_redis_fields().items()},
+            maxlen=MAXLEN,
+            approximate=True,
+        )
+        return msg_id.decode() if isinstance(msg_id, bytes) else msg_id
+```
+
+### Consumer
+
+The consumer listens for messages on the specified queue and processes them.
+
+```python
+# no-run
+# src/event_broker/consumers/event_consumer.py
+import asyncio
+import json
+import sys
+from typing import Awaitable, Callable, Dict
+
+import redis.asyncio as redis
+
+from src.event_broker.config import STREAM_KEY
+from src.event_broker.models.event_payload import Event
+
+
+class EventConsumer:
+    """
+    Uses consumer groups for at-least-once delivery and replay (XREADGROUP).
+    Includes:
+      - durable group creation
+      - manual ACK (XACK)
+      - idle claim of pending messages (optional)
+      - backoff on empty reads
+    """
+
+    def __init__(self, client: redis.Redis, group: str, consumer: str):
+        self.r = client
+        self.group = group
+        self.consumer = consumer
+        self._stop = asyncio.Event()
+
+    async def ensure_group(self) -> None:
+        try:
+            await self.r.xgroup_create(
+                name=STREAM_KEY, groupname=self.group, id="0-0", mkstream=True
+            )
+        except redis.ResponseError as e:
+            # Group already exists
+            if "BUSYGROUP" not in str(e):
+                raise
+
+    async def stop(self):
+        self._stop.set()
+
+    async def _process_message(
+        self,
+        msg_id: str,
+        fields: Dict[bytes, bytes],
+        handler: Callable[[Event], Awaitable[None]],
+    ) -> None:
+        try:
+            payload = {k.decode(): v.decode() for k, v in fields.items()}
+            evt = Event(
+                type=payload["type"],
+                data=json.loads(payload["data"]),
+                ts_ms=int(payload["ts"]),
+            )
+            # —— Place for idempotency: e.g., check evt.id in a Redis SET before processing
+            await handler(evt)
+            await self.r.xack(STREAM_KEY, self.group, msg_id)
+        except Exception as exc:  # noqa: BLE001
+            # In production: log structured error and optionally XDEL or move to DLQ stream
+            print(
+                json.dumps(
+                    {
+                        "level": "error",
+                        "msg": "event_processing_failed",
+                        "id": msg_id,
+                        "error": str(exc),
+                    }
+                ),
+                file=sys.stderr,
+            )
+
+    async def consume(
+        self,
+        handler: Callable[[Event], Awaitable[None]],
+        batch: int = 32,
+        block_ms: int = 5000,
+    ) -> None:
+        await self.ensure_group()
+        backoff = 0.25
+        while not self._stop.is_set():
+            try:
+                resp = await self.r.xreadgroup(
+                    groupname=self.group,
+                    consumername=self.consumer,
+                    streams={STREAM_KEY: ">"},
+                    count=batch,
+                    block=block_ms,
+                )
+                if not resp:
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, 2.0)
+                    continue
+
+                backoff = 0.25
+                # resp format: [(stream, [(msg_id, {fields})...])]
+                for _stream, messages in resp:
+                    for msg_id, fields in messages:
+                        msg_id = (
+                            msg_id.decode() if isinstance(msg_id, bytes) else msg_id
+                        )
+                        await self._process_message(msg_id, fields, handler)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    json.dumps(
+                        {
+                            "level": "error",
+                            "msg": "event_read_failed",
+                            "error": str(exc),
+                        }
+                    ),
+                    file=sys.stderr,
+                )
+                await asyncio.sleep(1.0)
+```
+
+### Configuration
+
+We need a configuration file to manage environment variables.
+
+```python
+# no-run
+# src/event_broker/config.py
+import os
+
+STREAM_KEY = os.getenv("EVENT_STREAM", "events:app")
+GROUP = os.getenv("EVENT_GROUP", "analytics")
+CONSUMER_NAME = os.getenv("EVENT_CONSUMER", f"consumer-{os.getpid()}")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+MAXLEN = int(os.getenv("EVENT_STREAM_MAXLEN", "100000"))  # capped stream
+```
+
+### Application
+
+The application can run in either producer or consumer mode based on command-line arguments.
+
+```python
+# no-run
+# src/event_broker/app.py
+import asyncio
+import json
+import signal
+import sys
+from dataclasses import asdict
+
+import redis.asyncio as redis
+
+from src.event_broker.config import CONSUMER_NAME, GROUP, REDIS_URL
+from src.event_broker.consumers.event_consumer import EventConsumer
+from src.event_broker.models.event_payload import Event
+from src.event_broker.producers.event_producer import EventProducer
+
+
+async def handle_event(evt: Event) -> None:
+    print(json.dumps({"level": "info", "received": asdict(evt)}))
+
+
+async def main():
+    client = redis.from_url(REDIS_URL, decode_responses=False)
+    if len(sys.argv) < 2:
+        print("Usage: produce <type> <json> | consume", file=sys.stderr)
+        sys.exit(2)
+
+    mode = sys.argv[1]
+    if mode == "produce":
+        if len(sys.argv) != 4:
+            print("Usage: produce <type> <json>", file=sys.stderr)
+            sys.exit(2)
+        evt = Event(type=sys.argv[2], data=json.loads(sys.argv[3]))
+        msg_id = await EventProducer(client).publish(evt)
+        print(json.dumps({"level": "info", "published_id": msg_id}))
+    elif mode == "consume":
+        consumer = EventConsumer(client, group=GROUP, consumer=CONSUMER_NAME)
+
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, lambda: asyncio.create_task(consumer.stop()))
+
+        await consumer.consume(handle_event)
+    else:
+        print("Unknown mode", file=sys.stderr)
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Running locally
+
+1. **Start services**
+
+```bash
+docker run -p 6379:6379 redis:7
+```
+
+2. **Install dependencies**
+
+```bash
+uv venv --python 3.12.0
+source .venv/bin/activate
+uv sync --frozen --no-cache
+```
+
+3. **Run the application**
+
+```bash
+# consumer
+REDIS_URL=redis://localhost:6379 python -m src.event_broker.app consume
+
+# producer
+REDIS_URL=redis://localhost:6379 python -m src.event_broker.app produce user.registered '{"user_id":"u-1"}'
+```
+
+# Message Brokers in Python
+
+## Alternatives to Message Broker in Python
+
+In case of implementing message brokers we have:
+
+- **RabbitMQ**: A widely used message broker that supports multiple messaging protocols and can be easily integrated with Python applications.
+  Python client `pika`.
+- **NATS**: A lightweight, high-performance messaging system for cloud-native applications, IoT messaging, and microservices architectures. Python
+  client: `asyncio-nats-client`.
+- **Apache ActiveMQ**: A message broker that supports various messaging protocols and can be used with Python through the Stomp protocol. Python
+  integration via STOMP: `stomp.py`.
+- **ZeroMQ**: A high-performance asynchronous messaging library aimed at use in scalable distributed or concurrent applications. Python
+  client: `pyzmq`.
+- **MQTT Brokers**: MQTT is a lightweight messaging protocol often used in IoT applications. Popular MQTT brokers include Mosquitto and HiveMQ.
+  Python client: `paho-mqtt`.
+
+## Implementing a Message Broker in Python
+
+For the implementation of a message broker I will use **RabbitMQ** because provides durable queues, flexible routing (direct/topic/fanout), publisher
+confirms, and consumer prefetch for back-pressure.
+
+### Model
+
+This immutable message schema will be used throughout the message broker implementation.
+
+```python
+# no-run
+# src/message_broker/models/message_schema.py
+import json
+import time
+import uuid
+from dataclasses import asdict, dataclass
+from typing import Any, Dict
+
+
+@dataclass(frozen=True)
+class Message:
+    type: str
+    data: Dict[str, Any]
+    msg_id: str = str(uuid.uuid4())
+    ts_ms: int = int(time.time() * 1000)
+
+    def body(self) -> bytes:
+        return json.dumps(
+            asdict(self), separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+```
+
+### Helper
+
+We need a helper to connect to RabbitMQ with a blocking connection. This will block until a connection is established or a timeout occurs.
+For multi-threaded applications, you may want to use a connection pool or implement `pika.BlockingConnection.add_callback_threadsafe()`. See
+the [documentation](https://pika.readthedocs.io/en/stable/modules/adapters/blocking.html).
+
+```python
+# no-run
+# src/message_broker/helper.py
+import pika  # BlockingConnection used with confirms and QoS
+
+from src.message_broker.config import AMQP_URL
+
+def connect() -> pika.BlockingConnection:
+    params = pika.URLParameters(AMQP_URL)
+    params.heartbeat = 30
+    params.blocked_connection_timeout = 30
+    return pika.BlockingConnection(params)
+```
+
+### Producer
+
+The following code implements a RabbitMQ producer and defines a topology. The topology consists of an exchange and a queue.
+
+```python
+# no-run
+# src/message_broker/producers/event_producer.py
+import json
+from typing import Any, Dict
+
+import pika
+
+from src.message_broker.config import EXCHANGE, QUEUE, ROUTING_KEY
+from src.message_broker.helper import connect
+from src.message_broker.models.message_schema import Message
+
+
+def declare_topology(ch: pika.adapters.blocking_connection.BlockingChannel) -> None:
+    ch.exchange_declare(exchange=EXCHANGE, exchange_type="topic", durable=True)
+    ch.queue_declare(
+        queue=QUEUE,
+        durable=True,
+        arguments={
+            # Optional: DLX config could go here
+            # "x-dead-letter-exchange": "app.dlx",
+        },
+    )
+    ch.queue_bind(queue=QUEUE, exchange=EXCHANGE, routing_key=ROUTING_KEY)
+
+
+def publish(msg_type: str, data: Dict[str, Any]) -> None:
+    conn = connect()
+    try:
+        ch = conn.channel()
+        declare_topology(ch)
+        # Publisher confirms for reliability
+        ch.confirm_delivery()
+
+        msg = Message(type=msg_type, data=data)
+        props = pika.BasicProperties(
+            content_type="application/json",
+            delivery_mode=2,  # persistent
+            message_id=msg.msg_id,
+            timestamp=msg.ts_ms // 1000,
+            type=msg.type,
+        )
+
+        ch.basic_publish(
+            exchange=EXCHANGE,
+            routing_key=msg.type,  # route by message type
+            body=msg.body(),
+            properties=props,
+            mandatory=True,
+        )
+
+        print(
+            json.dumps({"level": "info", "published_id": msg.msg_id, "type": msg.type})
+        )
+    finally:
+        conn.close()
+```
+
+### Consumer
+
+The consumer listens for messages on the specified queue and processes them.
+
+```python
+# no-run
+# src/message_broker/consumers/event_consumer.py
+import json
+import sys
+
+from src.message_broker.config import EXCHANGE, QUEUE, ROUTING_KEY
+from src.message_broker.helper import connect
+from src.message_broker.producers.event_producer import declare_topology
+
+
+def consume() -> None:
+    conn = connect()
+    ch = conn.channel()
+    declare_topology(ch)
+
+    # Back-pressure: one message at a time (adjust as needed)
+    ch.basic_qos(prefetch_count=16)
+
+    def on_message(channel, method, properties, body: bytes):
+        try:
+            payload = json.loads(body.decode("utf-8"))
+            # Idempotency hook: check payload["msg_id"] in a cache/DB before processing
+            print(json.dumps({"level": "info", "received": payload}))
+            # Simulate processing...
+            # If everything is fine:
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+        except Exception as exc:  # noqa: BLE001
+            # Decide requeue vs. dead-letter. Here: reject and requeue once (very basic).
+            redelivered = getattr(method, "redelivered", False)
+            print(
+                json.dumps(
+                    {
+                        "level": "error",
+                        "msg": "processing_failed",
+                        "error": str(exc),
+                        "redelivered": redelivered,
+                    }
+                ),
+                file=sys.stderr,
+            )
+            channel.basic_nack(
+                delivery_tag=method.delivery_tag, requeue=not redelivered
+            )
+
+    ch.basic_consume(queue=QUEUE, on_message_callback=on_message, auto_ack=False)
+
+    print(
+        json.dumps(
+            {
+                "level": "info",
+                "listening_on": {
+                    "exchange": EXCHANGE,
+                    "queue": QUEUE,
+                    "binding": ROUTING_KEY,
+                },
+            }
+        )
+    )
+    try:
+        ch.start_consuming()
+    except KeyboardInterrupt:
+        ch.stop_consuming()
+    finally:
+        conn.close()
+```
+
+### Application
+
+The application can run in either producer or consumer mode based on command-line arguments.
+
+```python
+# no-run
+# src/message_broker/app.py
+import json
+import sys
+
+from src.message_broker.consumers.event_consumer import consume
+from src.message_broker.producers.event_producer import publish
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: publish <type> <json> | consume", file=sys.stderr)
+        sys.exit(2)
+
+    mode = sys.argv[1]
+    if mode == "publish":
+        if len(sys.argv) != 4:
+            print("Usage: publish <type> <json>", file=sys.stderr)
+            sys.exit(2)
+        msg_type = sys.argv[2]
+        data = json.loads(sys.argv[3])
+        publish(msg_type, data)
+    elif mode == "consume":
+        consume()
+    else:
+        print("Unknown mode", file=sys.stderr)
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Running locally
+
+1. **Start services**
+
+```bash
+docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+2. **Install dependencies**
+
+```bash
+uv venv --python 3.12.0
+source .venv/bin/activate
+uv sync --frozen --no-cache
+```
+
+3. **Run the application**
+
+```bash
+# consumer
+AMQP_URL=amqp://guest:guest@localhost:5672/ python -m src.message_broker.app consume
+
+# producer
+AMQP_URL=amqp://guest:guest@localhost:5672/ python -m src.message_broker.app publish user.notifications '{"user_id":"u-1","text":"hi"}'
+```
+
+# Conclusion
+
+In this post, we explored the implementation of an event-driven architecture using RabbitMQ and Pika in Python. We covered the key components,
+including the producer, consumer, and message schema. By leveraging the power of message brokers, we can build scalable and decoupled systems
+that respond to events in real-time.
+
+The source code can be found in the [GitHub repository](https://github.com/gmunumel/event-driven-architecture-python).
+
+# References
+
+- [Building Event-Driven Microservices](https://www.oreilly.com/library/view/building-event-driven-microservices/9781492057888/)
+- [Architecture Patterns with Python](https://www.oreilly.com/library/view/architecture-patterns-with/9781492052197/)
+- [Designing Data-Intensive Applications](https://www.oreilly.com/library/view/designing-data-intensive-applications/9781491903063/)
+- [Event-Driven Architecture](https://en.wikipedia.org/wiki/Event-driven_architecture)
+- [Building Microservices, 2nd Edition](https://www.oreilly.com/library/view/building-microservices-2nd/9781492034018/)
+- [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)
+- [Implementing Domain-Driven Design](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/)
