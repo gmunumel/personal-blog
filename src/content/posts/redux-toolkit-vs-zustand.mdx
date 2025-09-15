@@ -1,0 +1,245 @@
+---
+title: Redux Toolkit vs Zustand - A Comparative Guide
+tags:
+  - react
+  - redux toolkit
+  - zustand
+synopsis: >
+  This guide provides a comprehensive comparison between Redux Toolkit and Zustand, two popular state management libraries for React applications.
+date: 2025-03-15
+---
+
+# Redux Toolkit vs Zustand - A Comparative Guide
+
+In this article, we will explore and compare two popular state management libraries for React applications: Redux Toolkit and Zustand.
+Both libraries offer unique features and benefits, making them suitable for different use cases. By the end of this guide, you will have a
+clearer understanding of which library might be the best fit for your project.
+
+## State Management in React
+
+React applications often require a way to manage and share state between components. Techniques such as
+[prop-drilling](https://react.dev/learn/passing-props-to-a-component) and the [Context API](https://react.dev/reference/react/createContext)
+can be used for simple state management, but as applications grow in complexity, they may require more robust solutions.
+
+Some of the drawbacks of using prop-drilling and Context API for state management include:
+
+- **Prop-drilling**: Passing props through multiple layers of components can lead to cumbersome and hard-to-maintain code.
+- **Context API**: While it helps avoid prop-drilling, it can lead to performance issues due to unnecessary re-renders of
+  components that consume the context.
+
+### Prop-drilling Example
+
+The following example illustrates how a deeply nested component must receive props passed through multiple levels:
+
+```javascript
+() => {
+  function Child({ message }) {
+    return <p>Child says: {message}</p>;
+  }
+
+  function Middle({ message }) {
+    return <Child message={message} />;
+  }
+
+  function Parent() {
+    return <Middle message="Hello via props!" />;
+  }
+
+  return <Parent />;
+};
+```
+
+Here `Parent → Middle → Child` must all pass `message`, even though only `Child` needs it.
+
+### Context API Example
+
+Here we avoid prop drilling by using `React.createContext`:
+
+```javascript
+() => {
+  const MessageContext = React.createContext("default");
+
+  function Child() {
+    const message = React.useContext(MessageContext);
+    return <p>Child says: {message}</p>;
+  }
+
+  function Parent() {
+    return (
+      <MessageContext.Provider value="Hello via Context!">
+        <Child />
+      </MessageContext.Provider>
+    );
+  }
+
+  return <Parent />;
+};
+```
+
+Now only `Parent` provides the value, and `Child` can consume it directly without going through `Middle`. However, if `MessageContext` changes,
+all components consuming it will re-render, which can lead to performance issues in larger applications.
+
+To address these challenges, developers often turn to state management libraries like Redux Toolkit and Zustand.
+
+## Redux Toolkit
+
+Redux Toolkit is the official, opinionated, batteries-included toolset for efficient Redux development. It simplifies the process of
+setting up and managing state in React applications.
+
+The following example demonstrates a simple counter application using Redux Toolkit. The initial setup involves creating a slice of state
+with actions to increment and decrement the counter.
+
+```bash
+// Redux setup
+const counterSlice = createSlice({
+  name: "counter",
+  initialState: { value: 0 },
+  reducers: {
+    increment: (state) => {
+      state.value += 1;
+    },
+    decrement: (state) => {
+      state.value -= 1;
+    },
+  },
+});
+
+const store = configureStore({ reducer: { counter: counterSlice.reducer } });
+const { increment, decrement } = counterSlice.actions;
+```
+
+The component below demonstrates how to use Redux Toolkit to display and update the counter value.
+
+```javascript
+() => {
+  const dispatch = useDispatch();
+  const count = useSelector((state) => state.counter.value);
+  return (
+    <div>
+      <button
+        className="rounded cursor-pointer border px-2"
+        onClick={() => dispatch(decrement())}
+      >
+        -
+      </button>
+      <span className="px-3">{count}</span>
+      <button
+        className="rounded cursor-pointer border px-2"
+        onClick={() => dispatch(increment())}
+      >
+        +
+      </button>
+    </div>
+  );
+};
+```
+
+## Zustand
+
+Zustand is a small, fast, and scalable state management library that uses hooks for state management in React applications. It provides a
+simple and intuitive API, making it easy to create and manage state without the boilerplate code often associated with Redux. Zustand
+means "state" in German.
+
+Following is a simple example of using Zustand for state management. The initial setup creates a store with a `bears`
+state and an `increase` action to increment the count.
+
+```bash
+// Zustand setup
+const useBearStore = create((set) => ({
+    bears: 0,
+    increase: () => set((state: any) => ({ bears: state.bears + 1 })),
+}));
+```
+
+The component below demonstrates how to use the Zustand store to display and update the number of bears.
+
+```javascript
+() => {
+  const bears = useBearStore((state) => state.bears);
+  const increase = useBearStore((state) => state.increase);
+  return (
+    <div>
+      <p>Bears: {bears}</p>
+      <button className="rounded cursor-pointer border px-2" onClick={increase}>
+        Add bear
+      </button>
+    </div>
+  );
+};
+```
+
+## Comparison
+
+<table>
+  <thead>
+    <th>Feature</th>
+    <th>Redux Toolkit</th>
+    <th>Zustand</th>
+  </thead>
+  <tbody>
+    <td>
+      <strong>Boilerplate</strong>
+    </td>
+    <td>More boilerplate due to actions, reducers, etc.</td>
+    <td>Minimal boilerplate with hooks and simple API</td>
+    <tr>
+      <td>
+        <strong>Learning Curve</strong>
+      </td>
+      <td>Steeper learning curve due to Redux concepts</td>
+      <td>Easier to learn with a straightforward API</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Performance</strong>
+      </td>
+      <td>Can lead to performance issues with large state trees</td>
+      <td>Generally performs well with minimal re-renders</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Ecosystem</strong>
+      </td>
+      <td>Rich ecosystem with middleware and dev tools</td>
+      <td>Smaller ecosystem but growing</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>State Structure</strong>
+      </td>
+      <td>Encourages normalized state structure</td>
+      <td>Flexible state structure</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>TypeScript Support</strong>
+      </td>
+      <td>Excellent TypeScript support</td>
+      <td>Good TypeScript support</td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Community</strong>
+      </td>
+      <td>Large and active community</td>
+      <td>Smaller but active community</td>
+    </tr>
+  </tbody>
+</table>
+
+# Conclusion
+
+Both Redux Toolkit and Zustand are powerful state management libraries for React applications, each with its own strengths and weaknesses.
+
+Redux Toolkit is well-suited for larger applications with complex state management needs, offering a rich ecosystem and excellent TypeScript support. However, it comes with more boilerplate and a steeper learning curve.
+
+On the other hand, Zustand provides a simpler and more intuitive API, making it easier to learn and use. It is a great choice for smaller applications or when you need a lightweight state management solution. However, it may lack some of the advanced features and ecosystem support that Redux Toolkit offers.
+
+Ultimately, the choice between Redux Toolkit and Zustand depends on your specific use case, team familiarity, and project requirements.
+
+# References
+
+- [Learning React: Modern Patterns for Developing React Apps](https://www.oreilly.com/library/view/learning-react-2nd/9781492051718/)
+- [Road to React](https://roadtoreact.com/)
+- [Redux Toolkit Documentation](https://redux-toolkit.js.org/)
+- [Zustand Documentation](https://zustand-demo.pmnd.rs/)

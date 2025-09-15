@@ -143,17 +143,23 @@ The following table summarizes the differences between monolithic and microservi
   </thead>
   <tbody>
     <tr>
-      <td>Codebase</td>
+      <td>
+        <strong>Codebase</strong>
+      </td>
       <td>Single codebase</td>
       <td>Multiple codebases, one for each service</td>
     </tr>
     <tr>
-      <td>Deployment</td>
+      <td>
+        <strong>Deployment</strong>
+      </td>
       <td>Deployed as a single unit</td>
       <td>Deployed independently, each service can be deployed separately</td>
     </tr>
     <tr>
-      <td>Scalability</td>
+      <td>
+        <strong>Scalability</strong>
+      </td>
       <td>Scales as a whole</td>
       <td>
         Each service can be scaled independently, allowing for more granular
@@ -161,7 +167,9 @@ The following table summarizes the differences between monolithic and microservi
       </td>
     </tr>
     <tr>
-      <td>Technology Stack</td>
+      <td>
+        <strong>Technology Stack</strong>
+      </td>
       <td>Typically uses a single technology stack</td>
       <td>
         Each service can use its own technology stack, allowing for flexibility
@@ -169,22 +177,30 @@ The following table summarizes the differences between monolithic and microservi
       </td>
     </tr>
     <tr>
-      <td>Communication</td>
+      <td>
+        <strong>Communication</strong>
+      </td>
       <td>In-process communication, tightly coupled</td>
       <td>Inter-process communication, loosely coupled</td>
     </tr>
     <tr>
-      <td>Data Management</td>
+      <td>
+        <strong>Data Management</strong>
+      </td>
       <td>Shared database, tightly coupled</td>
       <td>Decentralized data management, each service has its own database</td>
     </tr>
     <tr>
-      <td>Development Teams</td>
+      <td>
+        <strong>Development Teams</strong>
+      </td>
       <td>Typically a single team responsible for the entire application</td>
       <td>Multiple teams, each responsible for a specific service</td>
     </tr>
     <tr>
-      <td>Fault Tolerance</td>
+      <td>
+        <strong>Fault Tolerance</strong>
+      </td>
       <td>
         A failure in one part of the application can bring down the entire
         application
@@ -195,7 +211,9 @@ The following table summarizes the differences between monolithic and microservi
       </td>
     </tr>
     <tr>
-      <td>Testing</td>
+      <td>
+        <strong>Testing</strong>
+      </td>
       <td>Difficult to test individual components</td>
       <td>
         Easier to test individual services, allowing for more granular testing
@@ -203,7 +221,9 @@ The following table summarizes the differences between monolithic and microservi
       </td>
     </tr>
     <tr>
-      <td>Complexity</td>
+      <td>
+        <strong>Complexity</strong>
+      </td>
       <td>
         Can become complex as the application grows, leading to challenges in
         maintenance and scalability
@@ -942,7 +962,7 @@ to avoid using microservices:
 - **Limited Resources**: If your team has limited resources or expertise in managing distributed systems, it may be better to stick with a monolithic architecture.
 - **Low Scalability Requirements**: If your application does not require high scalability or performance, a monolithic architecture may be sufficient.
 
-## Conclusion
+# Conclusion
 
 Microservices architecture is a powerful approach to building scalable, resilient, and maintainable modern applications. By breaking
 down applications into smaller, independent services, teams can develop, deploy, and maintain services independently,
@@ -952,7 +972,7 @@ However, microservices architecture also introduces additional complexity and ch
 ensuring service communication, and handling failures. It is important to carefully consider the trade-offs and
 benefits of using microservices before adopting this architecture.
 
-## References
+# References
 
 - [Building Microservices, 2nd Edition](https://www.oreilly.com/library/view/building-microservices-2nd/9781492034018/)
 - [Domain-Driven Design: Tackling Complexity in the Heart of Software](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/)

@@ -24,6 +24,7 @@
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "^15.3.2",
+    "@reduxjs/toolkit": "^2.9.0",
     "@tailwindcss/typography": "^0.5.16",
     "gray-matter": "^4.0.3",
     "mermaid": "^11.6.0",
@@ -31,9 +32,12 @@
     "prismjs": "^1.30.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-live": "^4.1.8",
+    "react-redux": "^9.2.0",
     "react-simple-code-editor": "^0.14.1",
     "remark-slug": "^7.0.1",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

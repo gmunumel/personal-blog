@@ -3,6 +3,7 @@ import PythonRunner from "@/app/components/PythonRunner";
 import Mermaid from "@/app/components/Mermaid";
 import CopyableCodeBlock from "@/app/components/CopyableCodeBlock";
 import ArticleImage from "@/app/components/ArticleImage";
+import JavascriptRunner from "@/app/components/JavascriptRunner";
 
 const pythonComponent = (code: string | undefined) => {
   const noRun = code?.trimStart().startsWith("# no-run") ?? false;
@@ -48,6 +49,10 @@ const mermaidComponent = (code: string | undefined) => {
   );
 };
 
+const javascriptComponent = (code: string | undefined) => {
+  return <JavascriptRunner code={code ?? ""} />;
+};
+
 export const mdxComponents = {
   pre: (props: React.ComponentPropsWithoutRef<"pre">) => {
     let code: string | undefined;
@@ -74,6 +79,9 @@ export const mdxComponents = {
     }
     if (language === "mermaid") {
       return mermaidComponent(code);
+    }
+    if (language === "javascript" || language === "jsx" || language === "tsx") {
+      return javascriptComponent(code);
     }
     if (language) {
       return <CopyableCodeBlock code={code ?? ""} language={language} />;
