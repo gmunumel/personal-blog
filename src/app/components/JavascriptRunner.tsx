@@ -56,7 +56,7 @@ export default function JavascriptRunner({ code }: { code: string }) {
         useBearStore,
       }}
     >
-      <div className="p-4 rounded-xl border shadow space-y-3">
+      <div className="p-4 rounded-xl border shadow space-y-3 mb-2">
         <PreviewWithProviders />
         <div className="top-2 relative">
           <CopyButton getText={() => code} />

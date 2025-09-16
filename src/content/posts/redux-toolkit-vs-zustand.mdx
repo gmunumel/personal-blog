@@ -86,6 +86,13 @@ To address these challenges, developers often turn to state management libraries
 Redux Toolkit is the official, opinionated, batteries-included toolset for efficient Redux development. It simplifies the process of
 setting up and managing state in React applications.
 
+The building blocks of Redux Toolkit include:
+
+- **Store**: The centralized state container for the application.
+- **Slices**: A way to define state and reducers in a modular fashion.
+- **Actions**: Functions that describe state changes.
+- **Reducers**: Functions that specify how the state changes in response to actions.
+
 The following example demonstrates a simple counter application using Redux Toolkit. The initial setup involves creating a slice of state
 with actions to increment and decrement the counter.
 
@@ -140,6 +147,13 @@ Zustand is a small, fast, and scalable state management library that uses hooks 
 simple and intuitive API, making it easy to create and manage state without the boilerplate code often associated with Redux. Zustand
 means "state" in German.
 
+The core concepts of Zustand include:
+
+- **Store**: A function that creates a state container.
+- **Actions**: Functions that modify the state.
+
+No reducers or actions are needed; instead, you directly modify the state using functions.
+
 Following is a simple example of using Zustand for state management. The initial setup creates a store with a `bears`
 state and an `increase` action to increment the count.
 
@@ -172,16 +186,20 @@ The component below demonstrates how to use the Zustand store to display and upd
 
 <table>
   <thead>
-    <th>Feature</th>
-    <th>Redux Toolkit</th>
-    <th>Zustand</th>
+    <tr>
+      <th>Feature</th>
+      <th>Redux Toolkit</th>
+      <th>Zustand</th>
+    </tr>
   </thead>
   <tbody>
-    <td>
-      <strong>Boilerplate</strong>
-    </td>
-    <td>More boilerplate due to actions, reducers, etc.</td>
-    <td>Minimal boilerplate with hooks and simple API</td>
+    <tr>
+      <td>
+        <strong>Boilerplate</strong>
+      </td>
+      <td>More boilerplate due to actions, reducers, etc.</td>
+      <td>Minimal boilerplate with hooks and simple API</td>
+    </tr>
     <tr>
       <td>
         <strong>Learning Curve</strong>
