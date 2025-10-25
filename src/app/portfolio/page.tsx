@@ -26,6 +26,25 @@ const PortfolioPage = () => {
             View Project
           </a>
         </div>
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
+          <h2 className="text-xl text-gray-900 dark:text-white font-semibold mb-2">
+            Market-Mind
+          </h2>
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
+            Stock Market Prediction. An application that predicts stock prices
+            using LLM techniques as RAG. Built with Python and FastAPI for
+            the backend, and React for the frontend. Using ChromaDB for vector
+            storage.
+          </p>
+          <a
+            href="https://market-mind.stackedge.dev/portfolio/market-mind"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View Project
+          </a>
+        </div>
       </div>
     </main>
   );
